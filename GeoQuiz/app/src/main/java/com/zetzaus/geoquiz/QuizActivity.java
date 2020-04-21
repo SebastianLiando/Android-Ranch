@@ -1,6 +1,7 @@
 package com.zetzaus.geoquiz;
 
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -23,7 +24,7 @@ public class QuizActivity extends AppCompatActivity {
         mTrueButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(QuizActivity.this, R.string.toast_correct, Toast.LENGTH_SHORT).show();
+                createToastTop(R.string.toast_correct).show();
             }
         });
 
@@ -32,8 +33,19 @@ public class QuizActivity extends AppCompatActivity {
         mFalseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(QuizActivity.this, R.string.toast_incorrect, Toast.LENGTH_SHORT).show();
+                createToastTop(R.string.toast_incorrect).show();
             }
         });
+    }
+
+    /**
+     * Returns a Toast object located at the top center of the screen.
+     * @param stringId the string resource to be used as the message.
+     * @return a Toast object
+     */
+    private Toast createToastTop(int stringId){
+        Toast toast = Toast.makeText(this, stringId, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP, 0, 0);
+        return toast;
     }
 }
