@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">GeoQuiz</string>
+
+    <!-- Button labels -->
+    <string name="button_false">False</string>
+    <string name="button_true">True</string>
+
+    <!-- Toast messages -->
+    <string name="toast_correct">Correct :D</string>
+    <string name="toast_incorrect">Incorrect :(</string>
+
+    <string name="text_question">River Nile is located in Egypt.</string>
 </resources>
