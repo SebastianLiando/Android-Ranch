@@ -26,7 +26,7 @@ public class QuizActivity extends AppCompatActivity {
     private TextView mQuestionText;
     private TextView mResultText;
 
-    private Question[] mQuestionBank = {
+    private final Question[] mQuestionBank = {
             new Question(R.string.question_one, true),
             new Question(R.string.question_two, true),
             new Question(R.string.question_three, false),
@@ -193,11 +193,7 @@ public class QuizActivity extends AppCompatActivity {
     private boolean isCurrentQuestionAnswered() {
         int mask = 1 << mCurrentIndex;
 
-        if ((mAnsweredMask & mask) != 0) {
-            return true;
-        }
-
-        return false;
+        return (mAnsweredMask & mask) != 0;
     }
 
     /**
