@@ -18,6 +18,7 @@ public class QuizActivity extends AppCompatActivity {
     private Button mTrueButton;
     private Button mFalseButton;
     private Button mNextButton;
+    private Button mPrevButton;
     private TextView mQuestionText;
 
     private Question[] mQuestionBank = {
@@ -79,6 +80,17 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                updateQuestionText();
+            }
+        });
+
+        // Make the previous button listens to click. It will replace with the previous question.
+        // Is a solution for Chapter 2 challenge problem
+        mPrevButton = findViewById(R.id.button_prev);
+        mPrevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCurrentIndex = (mCurrentIndex - 1 == -1) ? (mQuestionBank.length - 1) : (mCurrentIndex - 1);
                 updateQuestionText();
             }
         });

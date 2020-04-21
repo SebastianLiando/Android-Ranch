@@ -5,6 +5,7 @@
     <string name="button_false">False</string>
     <string name="button_true">True</string>
     <string name="button_next">Next</string>
+    <string name="button_previous">Prev</string>
 
     <!-- Toast messages -->
     <string name="toast_correct">Correct :D</string>
@@ -16,5 +17,6 @@
     <string name="question_three">Julian is a name of a hurricane.</string>
     <string name="question_four">Croatia is landlocked.</string>
     <string name="question_five">Auckland is New Zealand\'s largest city.</string>
+
 
 </resources>
