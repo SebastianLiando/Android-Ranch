@@ -4,8 +4,10 @@
     <!-- Button labels -->
     <string name="button_false">False</string>
     <string name="button_true">True</string>
-    <string name="button_next">Next</string>
-    <string name="button_previous">Prev</string>
+
+    <!-- ImageButton description -->
+    <string name="image_button_next">Next Question</string>
+    <string name="image_button_prev">Previous Question</string>
 
     <!-- Toast messages -->
     <string name="toast_correct">Correct :D</string>
@@ -17,6 +19,7 @@
     <string name="question_three">Julian is a name of a hurricane.</string>
     <string name="question_four">Croatia is landlocked.</string>
     <string name="question_five">Auckland is New Zealand\'s largest city.</string>
+
 
 
 </resources>

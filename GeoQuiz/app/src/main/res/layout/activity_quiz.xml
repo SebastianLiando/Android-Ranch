@@ -22,7 +22,7 @@
             android:id="@+id/true_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="4dp"
             android:text="@string/button_true" />
 
         <Button
@@ -37,22 +37,20 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp">
 
-        <Button
+        <ImageButton
             android:id="@+id/button_prev"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:drawableStart="@drawable/ic_prev"
-            android:drawablePadding="4dp"
-            android:text="@string/button_previous" />
+            android:layout_marginEnd="4dp"
+            android:contentDescription="@string/image_button_prev"
+            android:src="@drawable/ic_prev" />
 
-        <Button
+        <ImageButton
             android:id="@+id/button_next"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:drawableEnd="@drawable/ic_next"
-            android:drawablePadding="4dp"
-            android:text="@string/button_next" />
+            android:contentDescription="@string/image_button_next"
+            android:src="@drawable/ic_next" />
 
     </LinearLayout>
 
