@@ -8,6 +8,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Locale;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,6 +24,7 @@ public class QuizActivity extends AppCompatActivity {
     private ImageButton mNextButton;
     private ImageButton mPrevButton;
     private TextView mQuestionText;
+    private TextView mResultText;
 
     private Question[] mQuestionBank = {
             new Question(R.string.question_one, true),
@@ -32,9 +35,13 @@ public class QuizActivity extends AppCompatActivity {
     };
 
     private int mCurrentIndex = 0;
+    private int mAnsweredMask = 0;
+    private int mCorrectAnswer = 0;
 
     // Constants
     private static final String INDEX_KEY = "index_key";
+    private static final String ANSWER_MASK_KEY = "answer_mask_key";
+    private static final String CORRECT_ANSWER_KEY = "correct_answer_key";
 
     /**
      * Sets up the activity to be functional.
@@ -50,21 +57,9 @@ public class QuizActivity extends AppCompatActivity {
         // Restore state
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(INDEX_KEY);
+            mAnsweredMask = savedInstanceState.getInt(ANSWER_MASK_KEY);
+            mCorrectAnswer = savedInstanceState.getInt(CORRECT_ANSWER_KEY);
         }
-
-        // Display the first question
-        mQuestionText = findViewById(R.id.text_question);
-        updateQuestionText();
-
-        // Clicking the question text also cycles to the next question.
-        // Is the solution for the challenge in Question 2.
-        mQuestionText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
-                updateQuestionText();
-            }
-        });
 
         // Make the true button listens to click. It will display a toast.
         mTrueButton = findViewById(R.id.true_button);
@@ -104,6 +99,26 @@ public class QuizActivity extends AppCompatActivity {
                 updateQuestionText();
             }
         });
+
+        // Display the first question
+        mQuestionText = findViewById(R.id.text_question);
+        updateQuestionText();
+
+        // Clicking the question text also cycles to the next question.
+        // Is the solution for the challenge in Question 2.
+        mQuestionText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                updateQuestionText();
+            }
+        });
+
+        // Setup result text
+        mResultText = findViewById(R.id.text_result);
+        if (isAllAnswered()){
+            mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
+        }
     }
 
     /**
@@ -115,13 +130,22 @@ public class QuizActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(INDEX_KEY, mCurrentIndex);
+        outState.putInt(ANSWER_MASK_KEY, mAnsweredMask);
+        outState.putInt(CORRECT_ANSWER_KEY, mCorrectAnswer);
     }
 
     /**
-     * Updates the question text to the question pointed by the current index
+     * Updates the question text to the question pointed by the current index.
      */
     private void updateQuestionText() {
         mQuestionText.setText(mQuestionBank[mCurrentIndex].getResId());
+
+        // Disable answer buttons if the question has been answered
+        if (isCurrentQuestionAnswered()) {
+            setAnswerButtonsState(false);
+        } else {
+            setAnswerButtonsState(true);
+        }
     }
 
     /**
@@ -133,8 +157,18 @@ public class QuizActivity extends AppCompatActivity {
         boolean answer = mQuestionBank[mCurrentIndex].isAnswerTrue();
         if (answer == userAnswer) {
             createToastTop(R.string.toast_correct).show();
+            mCorrectAnswer++;
         } else {
             createToastTop(R.string.toast_incorrect).show();
+        }
+
+        // Mark as answered
+        mAnsweredMask = mAnsweredMask | (1 << mCurrentIndex);
+        setAnswerButtonsState(false);
+
+        // Display score if all has been answered
+        if (isAllAnswered()){
+            mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
         }
     }
 
@@ -147,7 +181,42 @@ public class QuizActivity extends AppCompatActivity {
      */
     private Toast createToastTop(int stringId) {
         Toast toast = Toast.makeText(this, stringId, Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.TOP, 0, 0);
+        toast.setGravity(Gravity.TOP, 0, 200);
         return toast;
+    }
+
+    /**
+     * Returns true if the current question has been answered.
+     *
+     * @return true if the current question has been answered.
+     */
+    private boolean isCurrentQuestionAnswered() {
+        int mask = 1 << mCurrentIndex;
+
+        if ((mAnsweredMask & mask) != 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if all questions has been answered.
+     *
+     * @return true if all questions has been answered.
+     */
+    private boolean isAllAnswered() {
+        int mask = (1 << (mQuestionBank.length)) - 1;
+        return mask == mAnsweredMask;
+    }
+
+    /**
+     * Sets the true and false buttons to be enabled or disabled.
+     *
+     * @param state the state.
+     */
+    private void setAnswerButtonsState(boolean state) {
+        mFalseButton.setEnabled(state);
+        mTrueButton.setEnabled(state);
     }
 }
