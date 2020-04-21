@@ -1,6 +1,6 @@
 # Overview
 This repository is the root folder to Android applications developed throughout the 
-<i>Android Programming: The Big Nerd Ranch Guide, Third Edition</i> book. Their main purpose is to be familiar and comfortable
+<i>Android Programming: The Big Nerd Ranch Guide, Third Edition</i> book. The main purpose is to be familiar and comfortable
 to programming Android applications.
 
 # Credits
