@@ -8,10 +8,10 @@
     tools:context=".QuizActivity">
 
     <TextView
+        android:id="@+id/text_question"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="@string/text_question" />
+        android:padding="16dp" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -30,5 +30,13 @@
             android:layout_height="wrap_content"
             android:text="@string/button_false" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/button_next"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_next"
+        android:drawableEnd="@drawable/ic_next"
+        android:drawablePadding="4dp"/>
 
 </LinearLayout>
