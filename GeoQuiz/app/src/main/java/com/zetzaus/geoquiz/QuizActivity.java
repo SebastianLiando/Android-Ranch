@@ -8,6 +8,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
@@ -32,6 +33,9 @@ public class QuizActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
 
+    // Constants
+    private static final String INDEX_KEY = "index_key";
+
     /**
      * Sets up the activity to be functional.
      *
@@ -42,6 +46,11 @@ public class QuizActivity extends AppCompatActivity {
         // Inflate layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
+
+        // Restore state
+        if (savedInstanceState != null) {
+            mCurrentIndex = savedInstanceState.getInt(INDEX_KEY);
+        }
 
         // Display the first question
         mQuestionText = findViewById(R.id.text_question);
@@ -98,6 +107,17 @@ public class QuizActivity extends AppCompatActivity {
     }
 
     /**
+     * Stores the index of the current question to the bundle.
+     *
+     * @param outState the bundle.
+     */
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(INDEX_KEY, mCurrentIndex);
+    }
+
+    /**
      * Updates the question text to the question pointed by the current index
      */
     private void updateQuestionText() {
@@ -130,6 +150,4 @@ public class QuizActivity extends AppCompatActivity {
         toast.setGravity(Gravity.TOP, 0, 0);
         return toast;
     }
-
-
 }
