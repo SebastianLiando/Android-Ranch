@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        tools:text="Answer"/>
+        tools:text="Answer" />
 
     <Button
         android:id="@+id/button_show_answer"
@@ -25,4 +25,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/button_show" />
+
+    <TextView
+        android:id="@+id/text_android_version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp" />
 </LinearLayout>

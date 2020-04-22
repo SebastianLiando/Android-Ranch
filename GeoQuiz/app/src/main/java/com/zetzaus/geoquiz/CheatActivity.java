@@ -1,11 +1,17 @@
 package com.zetzaus.geoquiz;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewAnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.util.Locale;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +27,7 @@ public class CheatActivity extends AppCompatActivity {
 
     private Button mShowButton;
     private TextView mTextAnswer;
+    private TextView mTextVersion;
 
     /**
      * Returns an intent containing information to start the <code>CheatActivity</code> class.
@@ -60,13 +67,6 @@ public class CheatActivity extends AppCompatActivity {
 
         mTextAnswer = findViewById(R.id.text_cheat);
 
-        if (savedInstanceState != null) {
-            mIsCheated = savedInstanceState.getBoolean(CHEATED_KEY);
-            if(mIsCheated){
-                displayAnswer();
-            }
-        }
-
         // Setup show button
         mShowButton = findViewById(R.id.button_show_answer);
         mShowButton.setOnClickListener(new View.OnClickListener() {
@@ -74,8 +74,38 @@ public class CheatActivity extends AppCompatActivity {
             public void onClick(View v) {
                 displayAnswer();
                 mIsCheated = true;
+
+                // Animation only for SDK 21 and above
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    int cx = mShowButton.getWidth() / 2;
+                    int cy = mShowButton.getHeight() / 2;
+                    float radius = mShowButton.getWidth();
+                    Animator anim = ViewAnimationUtils.createCircularReveal(mShowButton, cx, cy, radius, 0);
+                    anim.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(Animator animation) {
+                            super.onAnimationEnd(animation);
+                            mShowButton.setVisibility(View.GONE);
+                        }
+                    });
+                    anim.start();
+                }
             }
         });
+
+        // Display the device SDK version
+        mTextVersion = findViewById(R.id.text_android_version);
+        mTextVersion.setText(String.format(Locale.getDefault(),
+                getResources().getString(R.string.text_android_version), Build.VERSION.SDK_INT));
+
+        // Restore state
+        if (savedInstanceState != null) {
+            mIsCheated = savedInstanceState.getBoolean(CHEATED_KEY);
+            if (mIsCheated) {
+                displayAnswer();
+                mShowButton.setVisibility(View.GONE);
+            }
+        }
     }
 
     /**
@@ -89,7 +119,10 @@ public class CheatActivity extends AppCompatActivity {
         outState.putBoolean(CHEATED_KEY, mIsCheated);
     }
 
-    private void displayAnswer(){
+    /**
+     * Display the answer for the question to the user.
+     */
+    private void displayAnswer() {
         if (mIsAnswerTrue) mTextAnswer.setText(R.string.button_true);
         else mTextAnswer.setText(R.string.button_false);
     }
@@ -106,6 +139,9 @@ public class CheatActivity extends AppCompatActivity {
         setResult(RESULT_OK, data);
     }
 
+    /**
+     * Sets the result code and intent before popping the activity from the back stack.
+     */
     @Override
     public void onBackPressed() {
         setAnswerShownResult(mIsCheated);

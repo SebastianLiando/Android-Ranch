@@ -24,5 +24,6 @@
     <string name="question_five">Auckland is New Zealand\'s largest city.</string>
 
     <string name="text_cheat">Are you sure you want to cheat?</string>
+    <string name="text_android_version">API Level %d</string>
 
 </resources>
