@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <include layout="@layout/item_crime" />
+
+    <Button
+        android:id="@+id/button_contact_police"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|center_vertical"
+        android:layout_marginEnd="4dp"
+        android:drawableStart="@drawable/ic_call"
+        android:drawablePadding="4dp"
+        android:text="@string/button_contact_police" />
+
+</FrameLayout>
