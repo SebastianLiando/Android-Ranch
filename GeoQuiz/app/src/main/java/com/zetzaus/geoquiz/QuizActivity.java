@@ -1,5 +1,6 @@
 package com.zetzaus.geoquiz;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 import java.util.Locale;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
@@ -21,6 +23,7 @@ public class QuizActivity extends AppCompatActivity {
 
     private Button mTrueButton;
     private Button mFalseButton;
+    private Button mCheatButton;
     private ImageButton mNextButton;
     private ImageButton mPrevButton;
     private TextView mQuestionText;
@@ -36,12 +39,15 @@ public class QuizActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
     private int mAnsweredMask = 0;
+    private int mCheatMask = 0;
     private int mCorrectAnswer = 0;
 
     // Constants
     private static final String INDEX_KEY = "index_key";
     private static final String ANSWER_MASK_KEY = "answer_mask_key";
     private static final String CORRECT_ANSWER_KEY = "correct_answer_key";
+    private static final String CHEAT_MASK_KEY = "cheat_mask_key";
+    private static final int CHEAT_REQUEST_CODE = 0;
 
     /**
      * Sets up the activity to be functional.
@@ -59,6 +65,7 @@ public class QuizActivity extends AppCompatActivity {
             mCurrentIndex = savedInstanceState.getInt(INDEX_KEY);
             mAnsweredMask = savedInstanceState.getInt(ANSWER_MASK_KEY);
             mCorrectAnswer = savedInstanceState.getInt(CORRECT_ANSWER_KEY);
+            mCheatMask = savedInstanceState.getInt(CHEAT_MASK_KEY);
         }
 
         // Make the true button listens to click. It will display a toast.
@@ -100,6 +107,16 @@ public class QuizActivity extends AppCompatActivity {
             }
         });
 
+        // Make the cheat button listens to click. On click go to Cheat Activity
+        mCheatButton = findViewById(R.id.button_cheat);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent cheatIntent = CheatActivity.newIntent(QuizActivity.this, mQuestionBank[mCurrentIndex].isAnswerTrue());
+                startActivityForResult(cheatIntent, CHEAT_REQUEST_CODE);
+            }
+        });
+
         // Display the first question
         mQuestionText = findViewById(R.id.text_question);
         updateQuestionText();
@@ -116,7 +133,7 @@ public class QuizActivity extends AppCompatActivity {
 
         // Setup result text
         mResultText = findViewById(R.id.text_result);
-        if (isAllAnswered()){
+        if (isAllAnswered()) {
             mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
         }
     }
@@ -132,6 +149,27 @@ public class QuizActivity extends AppCompatActivity {
         outState.putInt(INDEX_KEY, mCurrentIndex);
         outState.putInt(ANSWER_MASK_KEY, mAnsweredMask);
         outState.putInt(CORRECT_ANSWER_KEY, mCorrectAnswer);
+        outState.putInt(CHEAT_MASK_KEY, mCheatMask);
+    }
+
+    /**
+     * Checks if the user really cheated in <code>CheatActivity</code>.
+     *
+     * @param requestCode the request code.
+     * @param resultCode  the result code.
+     * @param data        the extra information containing whether the user has cheated or not.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CHEAT_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                if (data == null) return;
+                int isCheater = CheatActivity.wasAnswerShown(data) ? 1 : 0;
+                int cheaterMask = isCheater << mCurrentIndex;
+                mCheatMask = mCheatMask | cheaterMask;
+            }
+        }
     }
 
     /**
@@ -155,11 +193,15 @@ public class QuizActivity extends AppCompatActivity {
      */
     private void checkAnswer(boolean userAnswer) {
         boolean answer = mQuestionBank[mCurrentIndex].isAnswerTrue();
-        if (answer == userAnswer) {
-            createToastTop(R.string.toast_correct).show();
-            mCorrectAnswer++;
+        if (!isCurrentQuestionCheated()) {
+            if (answer == userAnswer) {
+                createToastTop(R.string.toast_correct).show();
+                mCorrectAnswer++;
+            } else {
+                createToastTop(R.string.toast_incorrect).show();
+            }
         } else {
-            createToastTop(R.string.toast_incorrect).show();
+            createToastTop(R.string.toast_cheat).show();
         }
 
         // Mark as answered
@@ -167,9 +209,20 @@ public class QuizActivity extends AppCompatActivity {
         setAnswerButtonsState(false);
 
         // Display score if all has been answered
-        if (isAllAnswered()){
+        if (isAllAnswered()) {
             mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
         }
+    }
+
+    /**
+     * Returns true if the current question has been cheated.
+     *
+     * @return true if the current question has been cheated.
+     */
+    private boolean isCurrentQuestionCheated() {
+        int mask = 1 << mCurrentIndex;
+
+        return (mask & mCheatMask) != 0;
     }
 
     /**

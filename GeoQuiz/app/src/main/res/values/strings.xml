@@ -4,6 +4,8 @@
     <!-- Button labels -->
     <string name="button_false">False</string>
     <string name="button_true">True</string>
+    <string name="button_cheat">Cheat!</string>
+    <string name="button_show">Show Answer</string>
 
     <!-- ImageButton description -->
     <string name="image_button_next">Next Question</string>
@@ -12,6 +14,7 @@
     <!-- Toast messages -->
     <string name="toast_correct">Correct :D</string>
     <string name="toast_incorrect">Incorrect :(</string>
+    <string name="toast_cheat">Cheating is wrong</string>
 
     <!-- Question bank -->
     <string name="question_one">Nile River is in Egypt.</string>
@@ -20,6 +23,6 @@
     <string name="question_four">Croatia is landlocked.</string>
     <string name="question_five">Auckland is New Zealand\'s largest city.</string>
 
-
+    <string name="text_cheat">Are you sure you want to cheat?</string>
 
 </resources>
