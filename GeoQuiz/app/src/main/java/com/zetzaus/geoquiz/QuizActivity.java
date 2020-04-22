@@ -28,6 +28,7 @@ public class QuizActivity extends AppCompatActivity {
     private ImageButton mPrevButton;
     private TextView mQuestionText;
     private TextView mResultText;
+    private TextView mCheatRemainingText;
 
     private final Question[] mQuestionBank = {
             new Question(R.string.question_one, true),
@@ -48,6 +49,7 @@ public class QuizActivity extends AppCompatActivity {
     private static final String CORRECT_ANSWER_KEY = "correct_answer_key";
     private static final String CHEAT_MASK_KEY = "cheat_mask_key";
     private static final int CHEAT_REQUEST_CODE = 0;
+    private static final int MAX_CHEAT_COUNT = 3;
 
     /**
      * Sets up the activity to be functional.
@@ -112,7 +114,8 @@ public class QuizActivity extends AppCompatActivity {
         mCheatButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent cheatIntent = CheatActivity.newIntent(QuizActivity.this, mQuestionBank[mCurrentIndex].isAnswerTrue());
+                Intent cheatIntent = CheatActivity.newIntent(QuizActivity.this,
+                        mQuestionBank[mCurrentIndex].isAnswerTrue(), isCurrentQuestionCheated());
                 startActivityForResult(cheatIntent, CHEAT_REQUEST_CODE);
             }
         });
@@ -136,6 +139,22 @@ public class QuizActivity extends AppCompatActivity {
         if (isAllAnswered()) {
             mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
         }
+    }
+
+    /**
+     * Disables cheat button if the user has cheated more than the number of allowed times.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        int cheatCount = getCheatCount();
+        // Setup remaining cheats text
+        mCheatRemainingText = findViewById(R.id.text_cheats_remaining);
+        mCheatRemainingText.setText(String.format(Locale.getDefault(),
+                getResources().getString(R.string.text_cheats_remaining), MAX_CHEAT_COUNT - cheatCount));
+
+        if (cheatCount >= MAX_CHEAT_COUNT) mCheatButton.setEnabled(false);
     }
 
     /**
@@ -257,6 +276,23 @@ public class QuizActivity extends AppCompatActivity {
     private boolean isAllAnswered() {
         int mask = (1 << (mQuestionBank.length)) - 1;
         return mask == mAnsweredMask;
+    }
+
+    /**
+     * Returns the number of cheats the user has used. This functions uses the Brian Kernighan's algorithm.
+     *
+     * @return the number of cheats the user has used
+     */
+    private int getCheatCount() {
+        int count = 0;
+        int tmpCheatMask = mCheatMask;
+
+        while (tmpCheatMask != 0) {
+            tmpCheatMask = tmpCheatMask & (tmpCheatMask - 1);
+            count++;
+        }
+
+        return count;
     }
 
     /**

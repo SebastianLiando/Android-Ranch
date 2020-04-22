@@ -36,9 +36,10 @@ public class CheatActivity extends AppCompatActivity {
      * @param isAnswerTrue true if the statement/question's answer is true
      * @return the intent containing information to start the <code>CheatActivity</code> class.
      */
-    public static Intent newIntent(Context context, boolean isAnswerTrue) {
+    public static Intent newIntent(Context context, boolean isAnswerTrue, boolean isCheated) {
         Intent intent = new Intent(context, CheatActivity.class);
         intent.putExtra(EXTRA_ANSWER, isAnswerTrue);
+        intent.putExtra(EXTRA_CHEATED, isCheated);
         return intent;
     }
 
@@ -64,6 +65,7 @@ public class CheatActivity extends AppCompatActivity {
 
         // Get intent data
         mIsAnswerTrue = getIntent().getBooleanExtra(EXTRA_ANSWER, false);
+        mIsCheated = getIntent().getBooleanExtra(EXTRA_CHEATED, false);
 
         mTextAnswer = findViewById(R.id.text_cheat);
 
@@ -101,10 +103,12 @@ public class CheatActivity extends AppCompatActivity {
         // Restore state
         if (savedInstanceState != null) {
             mIsCheated = savedInstanceState.getBoolean(CHEATED_KEY);
-            if (mIsCheated) {
-                displayAnswer();
-                mShowButton.setVisibility(View.GONE);
-            }
+        }
+
+        // Check if already cheated
+        if (mIsCheated) {
+            displayAnswer();
+            mShowButton.setVisibility(View.GONE);
         }
     }
 

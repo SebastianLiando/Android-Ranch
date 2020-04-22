@@ -25,5 +25,6 @@
 
     <string name="text_cheat">Are you sure you want to cheat?</string>
     <string name="text_android_version">API Level %d</string>
+    <string name="text_cheats_remaining">Cheats remaining: %d</string>
 
 </resources>
