@@ -6,9 +6,13 @@
     <string name="label_crime_title">Title</string>
     <string name="label_crime_details">Details</string>
     <string name="label_crime_solved">Solved</string>
+    <string name="label_date_picker">Date of crime: </string>
 
     <string name="button_contact_police">Police</string>
     <string name="button_first">First</string>
     <string name="button_last">Last</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

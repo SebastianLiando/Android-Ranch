@@ -1,5 +1,7 @@
 package com.zetzaus.criminalintent;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,17 +13,21 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import java.util.Date;
 import java.util.UUID;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 /**
  * This fragment displays the details of a crime.
  */
 public class CrimeFragment extends Fragment {
 
+    private static final String TAG_DATE_PICKER = DatePickerFragment.class.getSimpleName();
     private static final String ARG_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
+    private static final int REQUEST_DATE = 0;
 
     private Crime mCrime;
 
@@ -91,10 +97,18 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-        // Set the date button TODO: change button to enable date picking
+        // Set the date button
         mDateButton = parent.findViewById(R.id.button_crime_date);
-        mDateButton.setText(mCrime.getDate().toString());
-        mDateButton.setEnabled(false);
+        updateDate();
+        mDateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager manager = getFragmentManager();
+                DatePickerFragment fragment = DatePickerFragment.newInstance(mCrime.getDate());
+                fragment.setTargetFragment(CrimeFragment.this, REQUEST_DATE);
+                fragment.show(manager, TAG_DATE_PICKER);
+            }
+        });
 
         // Setup check box
         mCheckBoxSolved = parent.findViewById(R.id.checkbox_crime_solved);
@@ -107,5 +121,31 @@ public class CrimeFragment extends Fragment {
         });
 
         return parent;
+    }
+
+    /**
+     * Retrieves the new date from the date picker.
+     *
+     * @param requestCode the request code.
+     * @param resultCode  the result code.
+     * @param data        contains the new date.
+     */
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_DATE) {
+            if (resultCode == Activity.RESULT_OK) {
+                Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+                mCrime.setDate(newDate);
+                updateDate();
+            }
+        }
+    }
+
+    /**
+     * Updates the button text to the updated date.
+     */
+    private void updateDate() {
+        mDateButton.setText(mCrime.getDate().toString());
     }
 }
