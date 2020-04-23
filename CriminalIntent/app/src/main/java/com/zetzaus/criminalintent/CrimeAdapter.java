@@ -1,5 +1,6 @@
 package com.zetzaus.criminalintent;
 
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,12 +18,13 @@ import androidx.recyclerview.widget.RecyclerView;
  *
  * @see CrimeListActivity
  */
-public class CrimeAdapter extends RecyclerView.Adapter {
+public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> {
 
     private static final int TYPE_NORMAL = 0;
     private static final int TYPE_SERIOUS = 1;
 
     private List<Crime> mCrimes;
+    private int mLastClickPos;
 
     /**
      * Constructs a <code>CrimeAdapter</code> by initializing the list of crimes.
@@ -56,9 +58,9 @@ public class CrimeAdapter extends RecyclerView.Adapter {
      * @param position the current position of the data.
      */
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull CrimeAdapter.ViewHolder holder, int position) {
         Crime crimeToBind = mCrimes.get(position);
-        ((CrimeAdapter.ViewHolder) holder).bind(crimeToBind);
+        holder.bind(crimeToBind);
     }
 
     /**
@@ -87,13 +89,22 @@ public class CrimeAdapter extends RecyclerView.Adapter {
     }
 
     /**
+     * Updates the list at the row where the data changed.
+     */
+    public void updateList() {
+        notifyItemChanged(mLastClickPos);
+    }
+
+    /**
      * This class holds the layout of one item of the <code>RecyclerView</code>.
      */
-    private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
         private TextView mTextTitle;
         private TextView mTextDate;
         private ImageView mImageSolved;
+
+        private Crime mCrime;
 
         /**
          * Constructs a <code>ViewHolder</code> object.
@@ -114,17 +125,27 @@ public class CrimeAdapter extends RecyclerView.Adapter {
          * @param crime the <code>Crime</code> object to be bound.
          */
         public void bind(Crime crime) {
+            mCrime = crime;
             mTextTitle.setText(crime.getTitle());
             mTextDate.setText(crime.getDateString());
             itemView.setOnClickListener(this);
             if (!crime.isSolved()) {
                 mImageSolved.setVisibility(View.INVISIBLE);
+            } else {
+                mImageSolved.setVisibility(View.VISIBLE);
             }
         }
 
+        /**
+         * Starts <code>CrimeActivity</code> on click.
+         *
+         * @param v the clicked view.
+         */
         @Override
         public void onClick(View v) {
-            // TODO: add click action
+            mLastClickPos = getBindingAdapterPosition();
+            Intent intent = CrimeActivity.newIntent(v.getContext(), mCrime.getId());
+            v.getContext().startActivity(intent);
         }
     }
 }

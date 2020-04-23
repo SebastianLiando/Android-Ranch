@@ -40,6 +40,15 @@ public class CrimeListFragment extends Fragment {
     }
 
     /**
+     * Update the list when the user goes back from <code>CrimeFragment</code>.
+     */
+    @Override
+    public void onResume() {
+        super.onResume();
+        mCrimeAdapter.updateList();
+    }
+
+    /**
      * Attaches a <code>CrimeAdapter</code> to the <code>RecyclerView</code>.
      */
     private void attachAdapter() {
