@@ -8,5 +8,7 @@
     <string name="label_crime_solved">Solved</string>
 
     <string name="button_contact_police">Police</string>
+    <string name="button_first">First</string>
+    <string name="button_last">Last</string>
 
 </resources>

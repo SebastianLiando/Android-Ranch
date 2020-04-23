@@ -45,7 +45,7 @@ public class CrimeListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mCrimeAdapter.updateList();
+        mCrimeAdapter.notifyDataSetChanged();
     }
 
     /**
@@ -56,4 +56,5 @@ public class CrimeListFragment extends Fragment {
         mCrimeAdapter = new CrimeAdapter(crimeLab.getCrimes());
         mRecyclerViewCrime.setAdapter(mCrimeAdapter);
     }
+
 }

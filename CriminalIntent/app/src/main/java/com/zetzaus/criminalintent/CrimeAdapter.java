@@ -24,7 +24,6 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
     private static final int TYPE_SERIOUS = 1;
 
     private List<Crime> mCrimes;
-    private int mLastClickPos;
 
     /**
      * Constructs a <code>CrimeAdapter</code> by initializing the list of crimes.
@@ -89,13 +88,6 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
     }
 
     /**
-     * Updates the list at the row where the data changed.
-     */
-    public void updateList() {
-        notifyItemChanged(mLastClickPos);
-    }
-
-    /**
      * This class holds the layout of one item of the <code>RecyclerView</code>.
      */
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -143,8 +135,7 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
          */
         @Override
         public void onClick(View v) {
-            mLastClickPos = getBindingAdapterPosition();
-            Intent intent = CrimeActivity.newIntent(v.getContext(), mCrime.getId());
+            Intent intent = CrimePagerActivity.newIntent(v.getContext(), mCrime.getId());
             v.getContext().startActivity(intent);
         }
     }
