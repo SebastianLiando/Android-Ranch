@@ -14,6 +14,7 @@ public class Crime {
 
     private UUID mId;
     private String mTitle;
+    private String mSuspect;
     private Date mDate;
     private boolean mSolved;
     private boolean mRequiresPolice;
@@ -134,5 +135,23 @@ public class Crime {
      */
     public void setRequiresPolice(boolean requiresPolice) {
         mRequiresPolice = requiresPolice;
+    }
+
+    /**
+     * Returns the crime's suspect name.
+     *
+     * @return the crime's suspect name.
+     */
+    public String getSuspect() {
+        return mSuspect;
+    }
+
+    /**
+     * Sets the crime's suspect name.
+     *
+     * @param suspect
+     */
+    public void setSuspect(String suspect) {
+        mSuspect = suspect;
     }
 }

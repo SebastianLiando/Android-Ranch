@@ -128,6 +128,7 @@ public class CrimeLab {
         ContentValues values = new ContentValues();
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.UUID, crime.getId().toString());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.TITLE, crime.getTitle());
+        values.put(CrimeDbSchema.CrimeTable.CrimeColumn.SUSPECT, crime.getSuspect());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.DATE, crime.getDate().getTime());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.SOLVED, crime.isSolved() ? 1 : 0);
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.REQUIRES_POLICE, crime.isRequiresPolice() ? 1 : 0);

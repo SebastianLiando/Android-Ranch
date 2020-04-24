@@ -17,6 +17,10 @@
     <string name="button_contact_police">Police</string>
     <string name="button_first">First</string>
     <string name="button_last">Last</string>
+    <string name="button_add_suspect">Choose Suspect</string>
+    <string name="button_send_report">Send Crime Report</string>
+    
+    <string name="content_desc_call">Call suspect</string>
 
     <string name="checkbox_requires_police">Requires Police</string>
     <string name="checkbox_crime_solved">Solved</string>
@@ -25,6 +29,17 @@
         <item quantity="one">%1$d crime</item>
         <item quantity="other">%1$d crimes</item>
     </plurals>
+
+    <string name="crime_report">%1$s! The crime was discovered on %2$s. %3$s, and %4$s.</string>
+    <string name="crime_report_solved">The crime has been solved</string>
+    <string name="crime_report_unsolved">The crime has not been solved</string>
+    <string name="crime_report_no_suspect">the crime has no suspect</string>
+    <string name="crime_report_suspect">the suspect of this crime is %1$s</string>
+    <string name="crime_report_subject">Criminal Intent Crime Report</string>
+
+    <string name="implicit_send_report">Send report via</string>
+
+    <string name="toast_no_contact">No contact applications found!</string>
 
 
 </resources>

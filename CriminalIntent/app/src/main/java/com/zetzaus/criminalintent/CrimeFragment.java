@@ -2,7 +2,10 @@ package com.zetzaus.criminalintent;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -15,6 +18,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -22,6 +26,7 @@ import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ShareCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -36,12 +41,15 @@ public class CrimeFragment extends Fragment {
     private static final String ARG_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_TIME = 1;
+    private static final int REQUEST_SUSPECT = 2;
 
     private Crime mCrime;
 
     private EditText mEditTextTitle;
     private Button mDateButton;
     private Button mTimeButton;
+    private Button mSendButton;
+    private Button mSuspectButton;
     private CheckBox mCheckBoxSolved;
     private CheckBox mCheckBoxPolice;
 
@@ -166,6 +174,39 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        //Setup send report button
+        mSendButton = parent.findViewById(R.id.button_report);
+        mSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ShareCompat.IntentBuilder
+                        .from(getActivity())
+                        .setType("text/plain")
+                        .setText(getCrimeReport())
+                        .setSubject(getString(R.string.crime_report_subject))
+                        .setChooserTitle(R.string.implicit_send_report)
+                        .startChooser();
+            }
+        });
+
+        // Setup suspect button
+        final Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        mSuspectButton = parent.findViewById(R.id.button_suspect);
+        mSuspectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+                    startActivityForResult(intent, REQUEST_SUSPECT);
+                } else {
+                    Toast.makeText(getActivity(), R.string.toast_no_contact, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        if (mCrime.getSuspect() != null) {
+            mSuspectButton.setText(mCrime.getSuspect());
+        }
+
         return parent;
     }
 
@@ -189,29 +230,51 @@ public class CrimeFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (data != null && resultCode == Activity.RESULT_OK) {
-            // Get new date
-            Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-            Calendar newCalendar = Calendar.getInstance();
-            newCalendar.setTime(newDate);
+        if (resultCode != Activity.RESULT_OK) return;
 
-            // Get old date
-            Date oldDate = mCrime.getDate();
-            Calendar oldCalendar = Calendar.getInstance();
-            oldCalendar.setTime(oldDate);
+        if (data != null) {
+            if (requestCode == REQUEST_SUSPECT) {
+                Uri contactUri = data.getData();
+                String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
+                Cursor contactQuery = getActivity().getContentResolver()
+                        .query(contactUri, queryFields, null, null, null);
 
-            // Set new date or time
-            if (requestCode == REQUEST_DATE) {
-                oldCalendar.set(Calendar.YEAR, newCalendar.get(Calendar.YEAR));
-                oldCalendar.set(Calendar.MONTH, newCalendar.get(Calendar.MONTH));
-                oldCalendar.set(Calendar.DAY_OF_MONTH, newCalendar.get(Calendar.DAY_OF_MONTH));
-            } else if (requestCode == REQUEST_TIME) {
-                oldCalendar.set(Calendar.HOUR_OF_DAY, newCalendar.get(Calendar.HOUR_OF_DAY));
-                oldCalendar.set(Calendar.MINUTE, newCalendar.get(Calendar.MINUTE));
+                try {
+                    // Check no data
+                    if (contactQuery.getCount() == 0) return;
+
+                    contactQuery.moveToFirst();
+                    mCrime.setSuspect(contactQuery.getString(0));
+                    mSuspectButton.setText(mCrime.getSuspect());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    contactQuery.close();
+                }
+            } else {
+                // Get new date
+                Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+                Calendar newCalendar = Calendar.getInstance();
+                newCalendar.setTime(newDate);
+
+                // Get old date
+                Date oldDate = mCrime.getDate();
+                Calendar oldCalendar = Calendar.getInstance();
+                oldCalendar.setTime(oldDate);
+
+                // Set new date or time
+                if (requestCode == REQUEST_DATE) {
+                    oldCalendar.set(Calendar.YEAR, newCalendar.get(Calendar.YEAR));
+                    oldCalendar.set(Calendar.MONTH, newCalendar.get(Calendar.MONTH));
+                    oldCalendar.set(Calendar.DAY_OF_MONTH, newCalendar.get(Calendar.DAY_OF_MONTH));
+                } else if (requestCode == REQUEST_TIME) {
+                    oldCalendar.set(Calendar.HOUR_OF_DAY, newCalendar.get(Calendar.HOUR_OF_DAY));
+                    oldCalendar.set(Calendar.MINUTE, newCalendar.get(Calendar.MINUTE));
+                }
+
+                mCrime.setDate(oldCalendar.getTime());
+                updateDateTime();
             }
-
-            mCrime.setDate(oldCalendar.getTime());
-            updateDateTime();
         }
     }
 
@@ -251,6 +314,26 @@ public class CrimeFragment extends Fragment {
     private void updateDateTime() {
         mDateButton.setText(mCrime.getDateString());
         mTimeButton.setText(mCrime.getTimeString());
+    }
+
+    /**
+     * Creates a crime report from the crime's information.
+     *
+     * @return a crime report.
+     */
+    private String getCrimeReport() {
+        String solvedString = null;
+        if (mCrime.isSolved()) solvedString = getString(R.string.crime_report_solved);
+        else solvedString = getString(R.string.crime_report_unsolved);
+
+        String suspectString = null;
+        if (mCrime.getSuspect() == null)
+            suspectString = getString(R.string.crime_report_no_suspect);
+        else suspectString = getString(R.string.crime_report_suspect, mCrime.getSuspect());
+
+        String dateString = mCrime.getDateString() + " " + mCrime.getTimeString();
+
+        return getString(R.string.crime_report, mCrime.getTitle(), dateString, solvedString, suspectString);
     }
 
 }
