@@ -88,6 +88,14 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
     }
 
     /**
+     * Sets the list of crime.
+     * @param crimes the list of crime to set.
+     */
+    public void setCrimes(List<Crime> crimes) {
+        mCrimes = crimes;
+    }
+
+    /**
      * This class holds the layout of one item of the <code>RecyclerView</code>.
      */
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

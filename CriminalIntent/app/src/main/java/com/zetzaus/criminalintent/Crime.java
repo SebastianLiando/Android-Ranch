@@ -18,11 +18,18 @@ public class Crime {
     private boolean mSolved;
     private boolean mRequiresPolice;
 
-    /**
-     * Constructs a crime. This initializes the date to current date and generates a random ID.
-     */
     public Crime() {
         mId = UUID.randomUUID();
+        mDate = new Date();
+    }
+
+    /**
+     * Creates a new crime.
+     *
+     * @param id the id of the crime.
+     */
+    public Crime(UUID id) {
+        mId = id;
         mDate = new Date();
     }
 

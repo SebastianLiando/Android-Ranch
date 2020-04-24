@@ -5,15 +5,26 @@
 
     <string name="label_crime_title">Title</string>
     <string name="label_crime_details">Details</string>
-    <string name="label_crime_solved">Solved</string>
     <string name="label_date_picker">Date of crime: </string>
+    <string name="label_no_crime_in_list">No crimes yet</string>
+
+    <string name="action_menu_new_crime">New Crime</string>
+    <string name="action_menu_delete_crime">Delete Crime</string>
+
+    <string name="subtitle_show">Show Subtitle</string>
+    <string name="subtitle_hide">Hide Subtitle</string>
 
     <string name="button_contact_police">Police</string>
     <string name="button_first">First</string>
     <string name="button_last">Last</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="checkbox_requires_police">Requires Police</string>
+    <string name="checkbox_crime_solved">Solved</string>
+
+    <plurals name="format_subtitle">
+        <item quantity="one">%1$d crime</item>
+        <item quantity="other">%1$d crimes</item>
+    </plurals>
 
 
 </resources>

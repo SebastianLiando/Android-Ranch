@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -17,6 +20,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -39,6 +43,7 @@ public class CrimeFragment extends Fragment {
     private Button mDateButton;
     private Button mTimeButton;
     private CheckBox mCheckBoxSolved;
+    private CheckBox mCheckBoxPolice;
 
     /**
      * Creates a new instance of the <code>CrimeFragment</code>.
@@ -64,8 +69,11 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Get crime
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_UUID);
         mCrime = CrimeLab.getInstance(getActivity()).getCrime(crimeId);
+        // Tell about menu
+        setHasOptionsMenu(true);
     }
 
     /**
@@ -138,7 +146,7 @@ public class CrimeFragment extends Fragment {
 
         updateDateTime();
 
-        // Setup check box
+        // Setup solved check box
         mCheckBoxSolved = parent.findViewById(R.id.checkbox_crime_solved);
         mCheckBoxSolved.setChecked(mCrime.isSolved());
         mCheckBoxSolved.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -148,7 +156,26 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        // Setup requires police check box
+        mCheckBoxPolice = parent.findViewById(R.id.checkbox_requires_police);
+        mCheckBoxPolice.setChecked(mCrime.isRequiresPolice());
+        mCheckBoxPolice.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mCrime.setRequiresPolice(isChecked);
+            }
+        });
+
         return parent;
+    }
+
+    /**
+     * Saves crime details to the database when the activity enters pause mode.
+     */
+    @Override
+    public void onPause() {
+        super.onPause();
+        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
     }
 
     /**
@@ -185,6 +212,36 @@ public class CrimeFragment extends Fragment {
 
             mCrime.setDate(oldCalendar.getTime());
             updateDateTime();
+        }
+    }
+
+    /**
+     * Inflates menu to the toolbar.
+     *
+     * @param menu     the menu to be inflated.
+     * @param inflater the inflater.
+     */
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.fragment_crime, menu);
+    }
+
+    /**
+     * Handles action when a menu item is selected.
+     *
+     * @param item the selected menu item.
+     * @return true if the action is handled.
+     */
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_menu_delete:
+                CrimeLab.getInstance(getActivity()).deleteCrime(mCrime.getId());
+                getActivity().finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
     }
 
