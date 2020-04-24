@@ -74,6 +74,17 @@ public class Crime {
     }
 
     /**
+     * Returns the time of the crime as a <code>String</code> object.
+     * The example format is 23:59.
+     *
+     * @return the time of the crime.
+     */
+    public String getTimeString() {
+        DateFormat format = new SimpleDateFormat("HH:mm");
+        return format.format(mDate);
+    }
+
+    /**
      * Sets the date of the crime.
      *
      * @param date the date of the crime.

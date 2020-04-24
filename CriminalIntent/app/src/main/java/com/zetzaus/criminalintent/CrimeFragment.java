@@ -13,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
 
@@ -26,13 +27,17 @@ import androidx.fragment.app.FragmentManager;
 public class CrimeFragment extends Fragment {
 
     private static final String TAG_DATE_PICKER = DatePickerFragment.class.getSimpleName();
+    private static final String TAG_TIME_PICKER = TimePickerFragment.class.getSimpleName();
+
     private static final String ARG_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
     private static final int REQUEST_DATE = 0;
+    private static final int REQUEST_TIME = 1;
 
     private Crime mCrime;
 
     private EditText mEditTextTitle;
     private Button mDateButton;
+    private Button mTimeButton;
     private CheckBox mCheckBoxSolved;
 
     /**
@@ -99,16 +104,39 @@ public class CrimeFragment extends Fragment {
 
         // Set the date button
         mDateButton = parent.findViewById(R.id.button_crime_date);
-        updateDate();
         mDateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentManager manager = getFragmentManager();
-                DatePickerFragment fragment = DatePickerFragment.newInstance(mCrime.getDate());
-                fragment.setTargetFragment(CrimeFragment.this, REQUEST_DATE);
-                fragment.show(manager, TAG_DATE_PICKER);
+                if (getResources().getBoolean(R.bool.isTablet)) {
+                    FragmentManager manager = getFragmentManager();
+                    PickerFragment fragment = DatePickerFragment.newInstance(mCrime.getDate());
+                    fragment.setTargetFragment(CrimeFragment.this, REQUEST_DATE);
+                    fragment.show(manager, TAG_DATE_PICKER);
+                } else {
+                    Intent intent = DatePickerActivity.newIntent(getActivity(), mCrime.getId());
+                    startActivityForResult(intent, REQUEST_DATE);
+                }
             }
         });
+
+        // Setup time button
+        mTimeButton = parent.findViewById(R.id.button_crime_time);
+        mTimeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (getResources().getBoolean(R.bool.isTablet)) {
+                    FragmentManager manager = getFragmentManager();
+                    PickerFragment fragment = TimePickerFragment.newInstance(mCrime.getDate());
+                    fragment.setTargetFragment(CrimeFragment.this, REQUEST_TIME);
+                    fragment.show(manager, TAG_TIME_PICKER);
+                } else {
+                    Intent intent = TimePickerActivity.newIntent(getActivity(), mCrime.getId());
+                    startActivityForResult(intent, REQUEST_TIME);
+                }
+            }
+        });
+
+        updateDateTime();
 
         // Setup check box
         mCheckBoxSolved = parent.findViewById(R.id.checkbox_crime_solved);
@@ -133,19 +161,39 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_DATE) {
-            if (resultCode == Activity.RESULT_OK) {
-                Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-                mCrime.setDate(newDate);
-                updateDate();
+
+        if (data != null && resultCode == Activity.RESULT_OK) {
+            // Get new date
+            Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            Calendar newCalendar = Calendar.getInstance();
+            newCalendar.setTime(newDate);
+
+            // Get old date
+            Date oldDate = mCrime.getDate();
+            Calendar oldCalendar = Calendar.getInstance();
+            oldCalendar.setTime(oldDate);
+
+            // Set new date or time
+            if (requestCode == REQUEST_DATE) {
+                oldCalendar.set(Calendar.YEAR, newCalendar.get(Calendar.YEAR));
+                oldCalendar.set(Calendar.MONTH, newCalendar.get(Calendar.MONTH));
+                oldCalendar.set(Calendar.DAY_OF_MONTH, newCalendar.get(Calendar.DAY_OF_MONTH));
+            } else if (requestCode == REQUEST_TIME) {
+                oldCalendar.set(Calendar.HOUR_OF_DAY, newCalendar.get(Calendar.HOUR_OF_DAY));
+                oldCalendar.set(Calendar.MINUTE, newCalendar.get(Calendar.MINUTE));
             }
+
+            mCrime.setDate(oldCalendar.getTime());
+            updateDateTime();
         }
     }
 
     /**
-     * Updates the button text to the updated date.
+     * Updates the buttons that displays date and time.
      */
-    private void updateDate() {
-        mDateButton.setText(mCrime.getDate().toString());
+    private void updateDateTime() {
+        mDateButton.setText(mCrime.getDateString());
+        mTimeButton.setText(mCrime.getTimeString());
     }
+
 }

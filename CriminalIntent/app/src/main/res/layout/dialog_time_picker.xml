@@ -5,12 +5,9 @@
 
     <include layout="@layout/dialog_picker" />
 
-    <DatePicker
-        android:id="@+id/date_picker"
+    <TimePicker
+        android:id="@+id/time_picker"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:calendarViewShown="false" />
-
+        android:layout_height="wrap_content" />
 
 </FrameLayout>
