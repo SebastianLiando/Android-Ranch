@@ -2,6 +2,7 @@ package com.zetzaus.criminalintent;
 
 import android.os.Bundle;
 
+import androidx.annotation.LayoutRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -19,7 +20,7 @@ public abstract class SingleFragmentActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_single_fragment);
+        setContentView(getLayoutResId());
 
         FragmentManager manager = getSupportFragmentManager();
         Fragment fragment = manager.findFragmentById(R.id.frame_container);
@@ -38,4 +39,14 @@ public abstract class SingleFragmentActivity extends AppCompatActivity {
      * @return the fragment to be displayed.
      */
     protected abstract Fragment createFragment();
+
+    /**
+     * Returns the layout ID to be set.
+     *
+     * @return the layout ID to be set.
+     */
+    @LayoutRes
+    protected int getLayoutResId() {
+        return R.layout.activity_single_fragment;
+    }
 }

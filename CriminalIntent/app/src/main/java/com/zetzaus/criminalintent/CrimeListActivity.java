@@ -1,10 +1,12 @@
 package com.zetzaus.criminalintent;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
+
+import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -16,7 +18,7 @@ import androidx.fragment.app.Fragment;
  *
  * @see CrimeListFragment
  */
-public class CrimeListActivity extends SingleFragmentActivity {
+public class CrimeListActivity extends SingleFragmentActivity implements CrimeListFragment.Callback, CrimeFragment.Callback {
 
     private static final int REQUEST_PERMISSION_CONTACT = 1000;
 
@@ -62,5 +64,55 @@ public class CrimeListActivity extends SingleFragmentActivity {
                 Toast.makeText(this, R.string.toast_permission_denied, Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    protected int getLayoutResId() {
+        return R.layout.activity_masterdetail;
+    }
+
+    @Override
+    public void onCrimeSelected(Crime crime) {
+        if (getResources().getBoolean(R.bool.isTablet)) {
+            Fragment fragment = CrimeFragment.newInstance(crime.getId());
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.frame_container_detail, fragment)
+                    .commit();
+        } else {
+            Intent intent = CrimePagerActivity.newIntent(this, crime.getId());
+            startActivity(intent);
+        }
+    }
+
+    /**
+     * Close the details fragment if the swiped item is the current crime.
+     *
+     * @param id the id of the crime.
+     */
+    @Override
+    public void onSwipeRemove(UUID id) {
+        CrimeFragment fragment = (CrimeFragment) getSupportFragmentManager().findFragmentById(R.id.frame_container_detail);
+        if (fragment.getCrime().getId().equals(id)) {
+            getSupportFragmentManager().beginTransaction()
+                    .remove(fragment)
+                    .commit();
+        }
+    }
+
+    @Override
+    public void onCrimeUpdated(Crime crime) {
+        CrimeListFragment fragment = (CrimeListFragment) getSupportFragmentManager().findFragmentById(R.id.frame_container);
+        fragment.updateAdapter();
+    }
+
+    /**
+     * Removes the fragment when a crime is deleted.
+     */
+    @Override
+    public void onCrimeDeleted() {
+        getSupportFragmentManager().beginTransaction()
+                .remove(getSupportFragmentManager().findFragmentById(R.id.frame_container_detail))
+                .commit();
+        onCrimeUpdated(null);
     }
 }

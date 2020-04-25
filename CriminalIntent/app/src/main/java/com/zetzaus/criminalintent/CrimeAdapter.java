@@ -24,6 +24,7 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
     private static final int TYPE_SERIOUS = 1;
 
     private List<Crime> mCrimes;
+    private CrimeListFragment.Callback mCallback;
 
     /**
      * Constructs a <code>CrimeAdapter</code> by initializing the list of crimes.
@@ -89,10 +90,20 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
 
     /**
      * Sets the list of crime.
+     *
      * @param crimes the list of crime to set.
      */
     public void setCrimes(List<Crime> crimes) {
         mCrimes = crimes;
+    }
+
+    /**
+     * Sets the callback to handle click.
+     *
+     * @param callback the callback.
+     */
+    public void setCallback(CrimeListFragment.Callback callback) {
+        mCallback = callback;
     }
 
     /**
@@ -137,14 +148,13 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
         }
 
         /**
-         * Starts <code>CrimeActivity</code> on click.
+         * Handles click on a row.
          *
          * @param v the clicked view.
          */
         @Override
         public void onClick(View v) {
-            Intent intent = CrimePagerActivity.newIntent(v.getContext(), mCrime.getId());
-            v.getContext().startActivity(intent);
+            if (mCallback != null) mCallback.onCrimeSelected(mCrime);
         }
     }
 }

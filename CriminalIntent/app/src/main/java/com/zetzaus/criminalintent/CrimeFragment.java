@@ -2,12 +2,11 @@ package com.zetzaus.criminalintent;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -62,6 +61,7 @@ public class CrimeFragment extends Fragment {
 
     private Crime mCrime;
     private File mPhoto;    // Stores pointer to the image location
+    private Callback mCallback;
 
     private EditText mEditTextTitle;
     private Button mDateButton;
@@ -73,6 +73,18 @@ public class CrimeFragment extends Fragment {
     private ImageView mImagePhoto;
     private CheckBox mCheckBoxSolved;
     private CheckBox mCheckBoxPolice;
+
+    public interface Callback {
+        void onCrimeUpdated(Crime crime);
+
+        void onCrimeDeleted();
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        mCallback = (Callback) context;
+    }
 
     /**
      * Creates a new instance of the <code>CrimeFragment</code>.
@@ -132,6 +144,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 mCrime.setTitle(s.toString());
+                updateCrime();
             }
 
             @Override
@@ -183,6 +196,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 mCrime.setSolved(isChecked);
+                updateCrime();
             }
         });
 
@@ -193,6 +207,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 mCrime.setRequiresPolice(isChecked);
+                updateCrime();
             }
         });
 
@@ -303,7 +318,6 @@ public class CrimeFragment extends Fragment {
 
         if (resultCode != Activity.RESULT_OK) return;
 
-
         if (requestCode == REQUEST_SUSPECT) {
             // Query suspect name
             Uri contactUri = data.getData();
@@ -331,6 +345,7 @@ public class CrimeFragment extends Fragment {
                     numberQuery.moveToFirst();
                     String phoneNumber = numberQuery.getString(0);
                     mCrime.setSuspectNum(phoneNumber);
+                    updateCrime();
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
@@ -347,6 +362,7 @@ public class CrimeFragment extends Fragment {
             getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
             updatePhoto();
+            updateCrime();
         } else {
             if (data != null) {
                 // Get new date
@@ -371,6 +387,7 @@ public class CrimeFragment extends Fragment {
 
                 mCrime.setDate(oldCalendar.getTime());
                 updateDateTime();
+                updateCrime();
             }
         }
     }
@@ -397,12 +414,26 @@ public class CrimeFragment extends Fragment {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_menu_delete:
-                CrimeLab.getInstance(getActivity()).deleteCrime(mCrime.getId());
-                getActivity().finish();
+                deleteCrime();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallback = null;
+    }
+
+    /**
+     * Returns the currently used <code>Crime</code> object.
+     *
+     * @return the currently used <code>Crime</code> object.
+     */
+    public Crime getCrime() {
+        return mCrime;
     }
 
     /**
@@ -448,7 +479,9 @@ public class CrimeFragment extends Fragment {
                 public void onGlobalLayout() {
 //                    Bitmap image = PictureUtils.getAccurateBitmap(mPhoto.getPath(), mImagePhoto);
 //                    mImagePhoto.setImageBitmap(image);
-                    Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
+                    if (getActivity() != null) {
+                        Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
+                    }
                 }
             });
 
@@ -460,6 +493,22 @@ public class CrimeFragment extends Fragment {
                 }
             });
         }
+    }
+
+    /**
+     * Updates crime and the corresponding list. Used to support tablet implementation.
+     */
+    private void updateCrime() {
+        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
+        mCallback.onCrimeUpdated(mCrime);
+    }
+
+    /**
+     * Removes the crime and invoke the activity's callback.
+     */
+    private void deleteCrime() {
+        CrimeLab.getInstance(getActivity()).deleteCrime(mCrime.getId());
+        mCallback.onCrimeDeleted();
     }
 
 }

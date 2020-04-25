@@ -1,6 +1,6 @@
 package com.zetzaus.criminalintent;
 
-import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -10,10 +10,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.UUID;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,6 +34,27 @@ public class CrimeListFragment extends Fragment {
     private CrimeLab mCrimeLab;
 
     private boolean mSubtitleShown = false;
+    private Callback mCallback;
+
+    /**
+     * This interface is a callback for the hosting activity.
+     */
+    public interface Callback {
+        void onCrimeSelected(Crime crime);
+
+        void onSwipeRemove(UUID id);
+    }
+
+    /**
+     * Attach the hosting activity as a callback. The activity must implement the callback interface.
+     *
+     * @param context the hosting activity.
+     */
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        mCallback = (Callback) context;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,6 +87,26 @@ public class CrimeListFragment extends Fragment {
         mRecyclerViewCrime = parent.findViewById(R.id.recycler_view_crimes);
         mRecyclerViewCrime.setLayoutManager(new LinearLayoutManager(getActivity()));
         updateAdapter();
+
+        // Setup Swipe
+        ItemTouchHelper touchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // Get the crime to remove
+                CrimeLab lab = CrimeLab.getInstance(getActivity());
+                Crime crime = lab.getCrimeAtPos(viewHolder.getBindingAdapterPosition());
+                // Delete and process view
+                mCallback.onSwipeRemove(crime.getId());
+                lab.deleteCrime(crime.getId());
+                updateAdapter();
+            }
+        });
+        touchHelper.attachToRecyclerView(mRecyclerViewCrime);
 
         return parent;
     }
@@ -99,8 +143,8 @@ public class CrimeListFragment extends Fragment {
             case R.id.action_add_crime:
                 Crime crime = new Crime();
                 CrimeLab.getInstance(getActivity()).addCrime(crime);
-                Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
-                startActivity(intent);
+                updateAdapter();
+                mCallback.onCrimeSelected(crime);
                 return true;
             case R.id.action_show_subtitle:
                 mSubtitleShown = !mSubtitleShown;
@@ -141,11 +185,21 @@ public class CrimeListFragment extends Fragment {
     }
 
     /**
+     * Frees the callback.
+     */
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallback = null;
+    }
+
+    /**
      * Attaches a <code>CrimeAdapter</code> to the <code>RecyclerView</code>.
      */
-    private void updateAdapter() {
+    public void updateAdapter() {
         if (mCrimeAdapter == null) {
             mCrimeAdapter = new CrimeAdapter(mCrimeLab.getCrimes());
+            mCrimeAdapter.setCallback(mCallback);
             mRecyclerViewCrime.setAdapter(mCrimeAdapter);
         } else {
             mCrimeAdapter.setCrimes(mCrimeLab.getCrimes());

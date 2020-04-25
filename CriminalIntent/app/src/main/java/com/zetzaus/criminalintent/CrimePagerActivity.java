@@ -18,7 +18,7 @@ import androidx.viewpager2.widget.ViewPager2;
 /**
  * This activity displays a view pager that consists of crime details.
  */
-public class CrimePagerActivity extends AppCompatActivity {
+public class CrimePagerActivity extends AppCompatActivity implements CrimeFragment.Callback {
 
     private static final String EXTRA_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
 
@@ -126,5 +126,18 @@ public class CrimePagerActivity extends AppCompatActivity {
         Intent intent = new Intent(context, CrimePagerActivity.class);
         intent.putExtra(EXTRA_UUID, id);
         return intent;
+    }
+
+    @Override
+    public void onCrimeUpdated(Crime crime) {
+        // Do nothing
+    }
+
+    /**
+     * Close the activity after deleting a crime.
+     */
+    @Override
+    public void onCrimeDeleted() {
+        finish();
     }
 }

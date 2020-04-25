@@ -125,6 +125,17 @@ public class CrimeLab {
     }
 
     /**
+     * Returns the crime at the given position.
+     *
+     * @param position the position.
+     * @return the crime at the given position.
+     */
+    public Crime getCrimeAtPos(int position) {
+        List<Crime> crimes = getCrimes();
+        return crimes.get(position);
+    }
+
+    /**
      * Returns a <code>File</code> object pointing to the photo.
      *
      * @param crime the crime which photo is to be fetched.

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <include layout="@layout/dialog_picker" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
 
     <DatePicker
         android:id="@+id/date_picker"
@@ -12,5 +11,7 @@
         android:layout_gravity="center"
         android:calendarViewShown="false" />
 
+    <include layout="@layout/dialog_picker" />
 
-</FrameLayout>
+
+</LinearLayout>
