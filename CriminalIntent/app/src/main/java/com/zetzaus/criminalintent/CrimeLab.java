@@ -8,8 +8,8 @@ import com.zetzaus.criminalintent.database.CrimeBaseHelper;
 import com.zetzaus.criminalintent.database.CrimeCursorWrapper;
 import com.zetzaus.criminalintent.database.CrimeDbSchema;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -124,17 +124,42 @@ public class CrimeLab {
                 new String[]{crimeId.toString()});
     }
 
+    /**
+     * Returns a <code>File</code> object pointing to the photo.
+     *
+     * @param crime the crime which photo is to be fetched.
+     * @return a <code>File</code> object pointing to the photo.
+     */
+    public File getCrimePhoto(Crime crime) {
+        File filesDir = mContext.getFilesDir();
+        return new File(filesDir, crime.getPhotoFileName());
+    }
+
+    /**
+     * Creates a whole row of crime information.
+     *
+     * @param crime the crime.
+     * @return the whole row of crime information.
+     */
     private static ContentValues getContentValues(Crime crime) {
         ContentValues values = new ContentValues();
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.UUID, crime.getId().toString());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.TITLE, crime.getTitle());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.SUSPECT, crime.getSuspect());
+        values.put(CrimeDbSchema.CrimeTable.CrimeColumn.PHONE, crime.getSuspectNum());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.DATE, crime.getDate().getTime());
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.SOLVED, crime.isSolved() ? 1 : 0);
         values.put(CrimeDbSchema.CrimeTable.CrimeColumn.REQUIRES_POLICE, crime.isRequiresPolice() ? 1 : 0);
         return values;
     }
 
+    /**
+     * Returns the whole row of the query.
+     *
+     * @param where     the where clause.
+     * @param whereArgs the where arguments.
+     * @return the whole row of the query that satisfies the where clause.
+     */
     private CrimeCursorWrapper simpleQuery(String where, String[] whereArgs) {
         return new CrimeCursorWrapper(
                 mDatabase.query(CrimeDbSchema.CrimeTable.NAME,

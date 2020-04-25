@@ -6,26 +6,28 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * This class is an entity class that holds information of a crime. The information includes a unique ID, a title,
- * the date of case, whether the crime is solved, and whether the crime is serious and therefore requires police
- * assistance.
+ * This class is an entity class that holds information of a crime.
  */
 public class Crime {
 
     private UUID mId;
     private String mTitle;
     private String mSuspect;
+    private String mSuspectNum;
     private Date mDate;
     private boolean mSolved;
     private boolean mRequiresPolice;
 
+    /**
+     * Creates a new crime with random ID.
+     */
     public Crime() {
         mId = UUID.randomUUID();
         mDate = new Date();
     }
 
     /**
-     * Creates a new crime.
+     * Creates a new crime with the given id.
      *
      * @param id the id of the crime.
      */
@@ -153,5 +155,32 @@ public class Crime {
      */
     public void setSuspect(String suspect) {
         mSuspect = suspect;
+    }
+
+    /**
+     * Returns the suspect's phone number.
+     *
+     * @return the suspect's phone number.
+     */
+    public String getSuspectNum() {
+        return mSuspectNum;
+    }
+
+    /**
+     * Sets the suspect's phone number.
+     *
+     * @param suspectNum the suspect's phone number.
+     */
+    public void setSuspectNum(String suspectNum) {
+        mSuspectNum = suspectNum;
+    }
+
+    /**
+     * Returns the file name for the photo of the crime.
+     *
+     * @return the file name for the photo of the crime.
+     */
+    public String getPhotoFileName() {
+        return "IMG_" + getId().toString() + ".jpg";
     }
 }

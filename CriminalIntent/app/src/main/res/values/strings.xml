@@ -19,7 +19,7 @@
     <string name="button_last">Last</string>
     <string name="button_add_suspect">Choose Suspect</string>
     <string name="button_send_report">Send Crime Report</string>
-    
+
     <string name="content_desc_call">Call suspect</string>
 
     <string name="checkbox_requires_police">Requires Police</string>
@@ -40,6 +40,11 @@
     <string name="implicit_send_report">Send report via</string>
 
     <string name="toast_no_contact">No contact applications found!</string>
+    <string name="toast_permission_denied">Some features of the application will not work, please enable the permission.</string>
+    <string name="toast_no_permission">Permission required!</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 
 </resources>

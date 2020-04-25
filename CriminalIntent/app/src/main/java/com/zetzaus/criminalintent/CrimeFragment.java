@@ -1,11 +1,16 @@
 package com.zetzaus.criminalintent;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -18,15 +23,21 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -37,19 +48,25 @@ public class CrimeFragment extends Fragment {
 
     private static final String TAG_DATE_PICKER = DatePickerFragment.class.getSimpleName();
     private static final String TAG_TIME_PICKER = TimePickerFragment.class.getSimpleName();
+    private static final String TAG_PHOTO = PhotoFragment.class.getSimpleName();
 
     private static final String ARG_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
     private static final int REQUEST_DATE = 0;
     private static final int REQUEST_TIME = 1;
     private static final int REQUEST_SUSPECT = 2;
+    private static final int REQUEST_PHOTO = 3;
 
     private Crime mCrime;
+    private File mPhoto;    // Stores pointer to the image location
 
     private EditText mEditTextTitle;
     private Button mDateButton;
     private Button mTimeButton;
     private Button mSendButton;
     private Button mSuspectButton;
+    private ImageButton mCallButton;
+    private ImageButton mCameraButton;
+    private ImageView mImagePhoto;
     private CheckBox mCheckBoxSolved;
     private CheckBox mCheckBoxPolice;
 
@@ -80,6 +97,7 @@ public class CrimeFragment extends Fragment {
         // Get crime
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_UUID);
         mCrime = CrimeLab.getInstance(getActivity()).getCrime(crimeId);
+        mPhoto = CrimeLab.getInstance(getActivity()).getCrimePhoto(mCrime);
         // Tell about menu
         setHasOptionsMenu(true);
     }
@@ -196,7 +214,12 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
-                    startActivityForResult(intent, REQUEST_SUSPECT);
+                    if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.READ_CONTACTS)
+                            == PackageManager.PERMISSION_GRANTED) {
+                        startActivityForResult(intent, REQUEST_SUSPECT);
+                    } else {
+                        Toast.makeText(getActivity(), R.string.toast_no_permission, Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     Toast.makeText(getActivity(), R.string.toast_no_contact, Toast.LENGTH_SHORT).show();
                 }
@@ -206,6 +229,50 @@ public class CrimeFragment extends Fragment {
         if (mCrime.getSuspect() != null) {
             mSuspectButton.setText(mCrime.getSuspect());
         }
+
+        mCallButton = parent.findViewById(R.id.image_button_call);
+        mCallButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Uri callUri = Uri.parse("tel:" + mCrime.getSuspectNum());
+                Intent callIntent = new Intent(Intent.ACTION_DIAL, callUri);
+                startActivity(callIntent);
+            }
+        });
+
+        // Setup crime photo
+        mImagePhoto = parent.findViewById(R.id.image_crime_photo);
+
+        // Setup camera button
+        mCameraButton = parent.findViewById(R.id.image_button_camera);
+        final Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        if (mPhoto == null || cameraIntent.resolveActivity(getActivity().getPackageManager()) == null)
+            mCameraButton.setEnabled(false);
+        else mCameraButton.setEnabled(true);
+
+        mCameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Uri targetUri = FileProvider.getUriForFile(getActivity()
+                        , "com.zetzaus.criminalintent.fileprovider",
+                        mPhoto);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, targetUri);
+
+                //Grant permission for camera apps
+                List<ResolveInfo> activities = getActivity().getPackageManager().queryIntentActivities(
+                        cameraIntent, PackageManager.MATCH_DEFAULT_ONLY);
+
+                for (ResolveInfo activity : activities) {
+                    getActivity().grantUriPermission(activity.activityInfo.packageName, targetUri,
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                }
+
+                startActivityForResult(cameraIntent, REQUEST_PHOTO);
+            }
+        });
+
+        updatePhoto();
 
         return parent;
     }
@@ -220,11 +287,11 @@ public class CrimeFragment extends Fragment {
     }
 
     /**
-     * Retrieves the new date from the date picker.
+     * Handles reply from another activity/fragment to update the crime's data.
      *
      * @param requestCode the request code.
      * @param resultCode  the result code.
-     * @param data        contains the new date.
+     * @param data        the new data.
      */
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -232,26 +299,52 @@ public class CrimeFragment extends Fragment {
 
         if (resultCode != Activity.RESULT_OK) return;
 
-        if (data != null) {
-            if (requestCode == REQUEST_SUSPECT) {
-                Uri contactUri = data.getData();
-                String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
-                Cursor contactQuery = getActivity().getContentResolver()
-                        .query(contactUri, queryFields, null, null, null);
+
+        if (requestCode == REQUEST_SUSPECT) {
+            // Query suspect name
+            Uri contactUri = data.getData();
+            String[] queryFields = new String[]{ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME};
+            Cursor contactQuery = getActivity().getContentResolver()
+                    .query(contactUri, queryFields, null, null, null);
+
+            try {
+                // Check no data
+                if (contactQuery.getCount() == 0) return;
+
+                contactQuery.moveToFirst();
+                mCrime.setSuspect(contactQuery.getString(1));
+                mSuspectButton.setText(mCrime.getSuspect());
+
+                // Query phone number
+                String contactId = contactQuery.getString(0);
+                Cursor numberQuery = getActivity().getContentResolver()
+                        .query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                new String[]{contactId}, null);
 
                 try {
-                    // Check no data
-                    if (contactQuery.getCount() == 0) return;
-
-                    contactQuery.moveToFirst();
-                    mCrime.setSuspect(contactQuery.getString(0));
-                    mSuspectButton.setText(mCrime.getSuspect());
+                    numberQuery.moveToFirst();
+                    String phoneNumber = numberQuery.getString(0);
+                    mCrime.setSuspectNum(phoneNumber);
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
-                    contactQuery.close();
+                    numberQuery.close();
                 }
-            } else {
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                contactQuery.close();
+            }
+        } else if (requestCode == REQUEST_PHOTO) {
+            Uri uri = FileProvider.getUriForFile(getActivity(),
+                    "com.zetzaus.criminalintent.fileprovider", mPhoto);
+            getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+            updatePhoto();
+        } else {
+            if (data != null) {
                 // Get new date
                 Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
                 Calendar newCalendar = Calendar.getInstance();
@@ -334,6 +427,27 @@ public class CrimeFragment extends Fragment {
         String dateString = mCrime.getDateString() + " " + mCrime.getTimeString();
 
         return getString(R.string.crime_report, mCrime.getTitle(), dateString, solvedString, suspectString);
+    }
+
+    /**
+     * Updates <code>ImageView</code> for the photo of the crime.
+     */
+    private void updatePhoto() {
+        if (mPhoto == null || !mPhoto.exists()) {
+            mImagePhoto.setImageDrawable(null);
+            // Not clickable
+            mImagePhoto.setOnClickListener(null);
+        } else {
+            Bitmap image = PictureUtils.getScaledBitmap(mPhoto.getPath(), getActivity());
+            mImagePhoto.setImageBitmap(image);
+            mImagePhoto.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    PhotoFragment fragment = PhotoFragment.newInstance(mPhoto);
+                    fragment.show(getFragmentManager(), TAG_PHOTO);
+                }
+            });
+        }
     }
 
 }
