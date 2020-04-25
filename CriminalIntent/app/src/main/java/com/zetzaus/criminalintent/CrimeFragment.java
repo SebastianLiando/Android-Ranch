@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -19,6 +20,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -26,6 +28,8 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.util.Calendar;
@@ -438,8 +442,16 @@ public class CrimeFragment extends Fragment {
             // Not clickable
             mImagePhoto.setOnClickListener(null);
         } else {
-            Bitmap image = PictureUtils.getScaledBitmap(mPhoto.getPath(), getActivity());
-            mImagePhoto.setImageBitmap(image);
+            ViewTreeObserver imageObserver = mImagePhoto.getViewTreeObserver();
+            imageObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+//                    Bitmap image = PictureUtils.getAccurateBitmap(mPhoto.getPath(), mImagePhoto);
+//                    mImagePhoto.setImageBitmap(image);
+                    Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
+                }
+            });
+
             mImagePhoto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

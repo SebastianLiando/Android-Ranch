@@ -1,7 +1,7 @@
 package com.zetzaus.criminalintent;
 
-import android.app.Dialog;
-import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,12 +9,17 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import com.bumptech.glide.Glide;
+
 import java.io.File;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
+/**
+ * This fragment displays a larger photo of the crime's photo.
+ */
 public class PhotoFragment extends DialogFragment {
 
     private static final String EXTRA_FILE = "EXTRA_FILE";
@@ -23,6 +28,12 @@ public class PhotoFragment extends DialogFragment {
     private Button mButtonOK;
     private File mFileImage;
 
+    /**
+     * Returns a new instance of this fragment.
+     *
+     * @param imageFile the image file to be displayed.
+     * @return a new instance of this fragment.
+     */
     public static PhotoFragment newInstance(File imageFile) {
 
         Bundle args = new Bundle();
@@ -33,6 +44,14 @@ public class PhotoFragment extends DialogFragment {
         return fragment;
     }
 
+    /**
+     * Loads the image and setup the button.
+     *
+     * @param inflater           the layout inflater.
+     * @param container          to be inflated.
+     * @param savedInstanceState the saved system state.
+     * @return the inflated layout of the fragment.
+     */
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -43,12 +62,11 @@ public class PhotoFragment extends DialogFragment {
         mFileImage = (File) getArguments().getSerializable(EXTRA_FILE);
 
         // Display image
-        if (mFileImage == null || !mFileImage.exists()){
+        if (mFileImage == null || !mFileImage.exists()) {
             return v;
         }
 
-        Bitmap bitmap = PictureUtils.getScaledBitmap(mFileImage.getPath(), getActivity());
-        mImage.setImageBitmap(bitmap);
+        Glide.with(getActivity()).load(mFileImage).into(mImage);
 
         // Setup button
         mButtonOK.setOnClickListener(new View.OnClickListener() {
