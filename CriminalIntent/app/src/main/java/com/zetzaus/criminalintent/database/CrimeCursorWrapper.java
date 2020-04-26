@@ -8,6 +8,9 @@ import com.zetzaus.criminalintent.Crime;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * This class is a custom <code>CursorWrapper</code> to encapsulate crime creation process.
+ */
 public class CrimeCursorWrapper extends CursorWrapper {
     /**
      * Creates a cursor wrapper.

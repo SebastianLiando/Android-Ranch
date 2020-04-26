@@ -8,6 +8,9 @@ import android.widget.TimePicker;
 import java.util.Calendar;
 import java.util.Date;
 
+/**
+ * This fragment is used to set the time of the crime.
+ */
 public class TimePickerFragment extends PickerFragment {
 
     private TimePicker mTimePicker;

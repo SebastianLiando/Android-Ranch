@@ -128,6 +128,12 @@ public class CrimePagerActivity extends AppCompatActivity implements CrimeFragme
         return intent;
     }
 
+    /**
+     * Do nothing. Required to be implemented.
+     *
+     * @param crime
+     * @see CrimeFragment.Callback
+     */
     @Override
     public void onCrimeUpdated(Crime crime) {
         // Do nothing

@@ -24,6 +24,11 @@
     <string name="content_desc_photo">Take a photo.</string>
     <string name="content_desc_no_photo">Crime scene photo (not set)</string>
     <string name="content_desc_have_photo">Crime scene photo (set)</string>
+    <string name="content_desc_crime_summary">The crime %1$s happens on %2$s and %3$s.</string>
+    <string name="content_desc_serious">Police assistant may be required.</string>
+    <string name="content_desc_crime_date">Crime date. The current date is %1$s.</string>
+    <string name="content_desc_crime_time">Crime time. The current time is %1$s.</string>
+    <string name="content_desc_crime_suspect">Crime suspect. %1$s.</string>
 
     <string name="checkbox_requires_police">Requires Police</string>
     <string name="checkbox_crime_solved">Solved</string>

@@ -19,7 +19,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -170,6 +169,9 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        //Accessibility purpose for date
+        mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
+
         // Setup time button
         mTimeButton = parent.findViewById(R.id.button_crime_time);
         mTimeButton.setOnClickListener(new View.OnClickListener() {
@@ -188,6 +190,9 @@ public class CrimeFragment extends Fragment {
         });
 
         updateDateTime();
+
+        // Accessibility for time button
+        mTimeButton.setContentDescription(getString(R.string.content_desc_crime_time, mCrime.getTimeString()));
 
         // Setup solved check box
         mCheckBoxSolved = parent.findViewById(R.id.checkbox_crime_solved);
@@ -245,9 +250,14 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        // Accessibility purpose
+        String suspect = getString(R.string.crime_report_no_suspect);
         if (mCrime.getSuspect() != null) {
+            suspect = getString(R.string.crime_report_suspect, mCrime.getSuspect());
             mSuspectButton.setText(mCrime.getSuspect());
         }
+
+        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, suspect));
 
         mCallButton = parent.findViewById(R.id.image_button_call);
         mCallButton.setOnClickListener(new View.OnClickListener() {
@@ -361,8 +371,20 @@ public class CrimeFragment extends Fragment {
                     "com.zetzaus.criminalintent.fileprovider", mPhoto);
             getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
+            // UI update
             updatePhoto();
             updateCrime();
+
+            // Accessibility purpose
+            final String announcement = getString(R.string.content_desc_have_photo);
+            mImagePhoto.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mImagePhoto.announceForAccessibility(announcement);
+                }
+            }, 1000);
+
+
         } else {
             if (data != null) {
                 // Get new date
@@ -473,20 +495,12 @@ public class CrimeFragment extends Fragment {
             // Not clickable
             mImagePhoto.setOnClickListener(null);
             // Give accessibility
-            mImagePhoto.setContentDescription(getString(R.string.content_desc_no_photo));
+            if (isAdded()) {
+                mImagePhoto.setContentDescription(getString(R.string.content_desc_no_photo));
+            }
         } else {
-            ViewTreeObserver imageObserver = mImagePhoto.getViewTreeObserver();
-            imageObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-//                    Bitmap image = PictureUtils.getAccurateBitmap(mPhoto.getPath(), mImagePhoto);
-//                    mImagePhoto.setImageBitmap(image);
-                    if (getActivity() != null) {
-                        Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
-                        mImagePhoto.setContentDescription(getString(R.string.content_desc_have_photo));
-                    }
-                }
-            });
+            Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
+            mImagePhoto.setContentDescription(getString(R.string.content_desc_have_photo));
 
             mImagePhoto.setOnClickListener(new View.OnClickListener() {
                 @Override

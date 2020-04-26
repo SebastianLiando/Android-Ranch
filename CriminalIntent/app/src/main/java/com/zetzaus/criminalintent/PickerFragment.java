@@ -14,8 +14,10 @@ import java.util.Date;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
 
+/**
+ * This abstract class is the parent class of dialogs that has a picker.
+ */
 public abstract class PickerFragment extends DialogFragment {
 
     public static final String EXTRA_DATE = BuildConfig.APPLICATION_ID + "EXTRA_DATE";

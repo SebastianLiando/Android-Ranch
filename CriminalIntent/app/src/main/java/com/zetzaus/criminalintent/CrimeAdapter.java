@@ -1,6 +1,5 @@
 package com.zetzaus.criminalintent;
 
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -145,6 +144,18 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
             } else {
                 mImageSolved.setVisibility(View.VISIBLE);
             }
+
+            // Accessibility purpose
+            String solved = mCrime.isSolved() ? itemView.getResources().getString(R.string.crime_report_solved)
+                    : itemView.getResources().getString(R.string.crime_report_unsolved);
+            String desc = itemView.getResources().getString(R.string.content_desc_crime_summary,
+                    mCrime.getTitle(), mCrime.getDateString(), solved);
+
+            // Additional description for serious crime
+            if (mCrime.isRequiresPolice()) {
+                desc += itemView.getResources().getString(R.string.content_desc_serious);
+            }
+            itemView.setContentDescription(desc);
         }
 
         /**

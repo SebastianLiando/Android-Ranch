@@ -66,11 +66,21 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
         }
     }
 
+    /**
+     * Returns the layout id of the alias layout.
+     *
+     * @return the layout id of the alias layout.
+     */
     @Override
     protected int getLayoutResId() {
         return R.layout.activity_masterdetail;
     }
 
+    /**
+     * Handles when a crime in the <code>RecyclerView</code> is selected.
+     *
+     * @param crime the selected crime.
+     */
     @Override
     public void onCrimeSelected(Crime crime) {
         if (getResources().getBoolean(R.bool.isTablet)) {
@@ -99,6 +109,11 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
         }
     }
 
+    /**
+     * Handles updating UI when the crime is updated.
+     *
+     * @param crime the updated crime.
+     */
     @Override
     public void onCrimeUpdated(Crime crime) {
         CrimeListFragment fragment = (CrimeListFragment) getSupportFragmentManager().findFragmentById(R.id.frame_container);

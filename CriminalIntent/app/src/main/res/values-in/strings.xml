@@ -22,9 +22,14 @@
     <string name="button_send_report">Kirim rapor kriminal</string>
 
     <string name="content_desc_call">Panggil Tersangka</string>
-    <string name ="content_desc_photo">Ambil foto</string>
-    <string name = "content_desc_no_photo">Foto kasus kriminal (tidak ada)</string>
-    <string name = "content_desc_have_photo">Foto kasus kriminal (ada)</string>
+    <string name="content_desc_photo">Ambil foto</string>
+    <string name="content_desc_no_photo">Foto kasus kriminal (tidak ada)</string>
+    <string name="content_desc_have_photo">Foto kasus kriminal (ada)</string>
+    <string name="content_desc_crime_summary">Kasus %1$s terjadi pada %2$s dan %3$s.</string>
+    <string name="content_desc_serious">Bantuan polisi mungkin dibutuhkan.</string>
+    <string name="content_desc_crime_date">Tanggal kasus. Tanggal menunjukkan %1$s.</string>
+    <string name="content_desc_crime_time">Waktu kasus. Waktu menunjukkan pukul %1$s.</string>
+    <string name="content_desc_crime_suspect">Tersangka kasus. %1$s.</string>
 
     <string name="checkbox_requires_police">Membutuhkan Polisi</string>
     <string name="checkbox_crime_solved">Selesai</string>
