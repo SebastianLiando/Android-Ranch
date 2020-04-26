@@ -9,6 +9,7 @@ import android.widget.ImageView;
 /**
  * This class is a utility class for image loading. It is used only for learning, but no longer implemented
  * as Glide library enables a more efficient loading.
+ * @deprecated
  */
 public class PictureUtils {
     /**

@@ -472,6 +472,8 @@ public class CrimeFragment extends Fragment {
             mImagePhoto.setImageDrawable(null);
             // Not clickable
             mImagePhoto.setOnClickListener(null);
+            // Give accessibility
+            mImagePhoto.setContentDescription(getString(R.string.content_desc_no_photo));
         } else {
             ViewTreeObserver imageObserver = mImagePhoto.getViewTreeObserver();
             imageObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -481,6 +483,7 @@ public class CrimeFragment extends Fragment {
 //                    mImagePhoto.setImageBitmap(image);
                     if (getActivity() != null) {
                         Glide.with(getActivity()).load(mPhoto).into(mImagePhoto);
+                        mImagePhoto.setContentDescription(getString(R.string.content_desc_have_photo));
                     }
                 }
             });

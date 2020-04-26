@@ -3,6 +3,7 @@ package com.zetzaus.criminalintent;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -74,12 +75,12 @@ public class Crime {
 
     /**
      * Returns the date of the crime as a <code>String</code> object.
-     * The example format is Friday, Apr 13, 1920.
+     * The format depends on the locale of the device.
      *
      * @return the date of the crime.
      */
     public String getDateString() {
-        DateFormat format = new SimpleDateFormat("EEEE, MMM dd, yyyy");
+        DateFormat format = DateFormat.getDateInstance(DateFormat.FULL, Locale.getDefault());
         return format.format(mDate);
     }
 

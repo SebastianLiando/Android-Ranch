@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Inten Kriminal</string>
+
+    <string name="hint_crime_title">Masukkan judul kriminal.</string>
+
+    <string name="label_crime_title">Judul</string>
+    <string name="label_crime_details">Keterangan</string>
+    <string name="label_date_picker">Tanggal Kejadian: </string>
+    <string name="label_no_crime_in_list">Belum ada data kriminal</string>
+
+    <string name="action_menu_new_crime">Tambah Kriminal</string>
+    <string name="action_menu_delete_crime">Hapus Kriminal</string>
+
+    <string name="subtitle_show">Tunjukkan Anak Judul</string>
+    <string name="subtitle_hide">Sembunyikan Anak Judul</string>
+
+    <string name="button_contact_police">Polisi</string>
+    <string name="button_first">Pertama</string>
+    <string name="button_last">Terakhir</string>
+    <string name="button_add_suspect">Pilih tersangka</string>
+    <string name="button_send_report">Kirim rapor kriminal</string>
+
+    <string name="content_desc_call">Panggil Tersangka</string>
+    <string name ="content_desc_photo">Ambil foto</string>
+    <string name = "content_desc_no_photo">Foto kasus kriminal (tidak ada)</string>
+    <string name = "content_desc_have_photo">Foto kasus kriminal (ada)</string>
+
+    <string name="checkbox_requires_police">Membutuhkan Polisi</string>
+    <string name="checkbox_crime_solved">Selesai</string>
+
+    <plurals name="format_subtitle">
+        <item quantity="one">%1$d kriminal</item>
+        <item quantity="other">%1$d kriminal</item>
+    </plurals>
+
+    <string name="crime_report">%1$s! Kejadian tersebut terungkap pada %2$s. %3$s, dan %4$s.</string>
+    <string name="crime_report_solved">Kasus telah diselesaikan</string>
+    <string name="crime_report_unsolved">Kasus belum diselesaikan</string>
+    <string name="crime_report_no_suspect">kasus tidak memiliki tersangka</string>
+    <string name="crime_report_suspect">tersangka dari kasus tersebut adalah %1$s</string>
+    <string name="crime_report_subject">Laporan Kasus Intent Kriminal</string>
+
+    <string name="implicit_send_report">Kirim laporan melalui</string>
+
+    <string name="toast_no_contact">Aplikasi kontak tidak ditemukan!</string>
+    <string name="toast_permission_denied">Beberapa fitur tidak akan berfungsi, mohon izinkan permisi.</string>
+    <string name="toast_no_permission">Dibutuhkan izin!</string>
+</resources>

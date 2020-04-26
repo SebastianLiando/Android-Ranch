@@ -15,7 +15,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp">
+            android:layout_marginTop="16dp"
+            android:baselineAligned="false">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -27,13 +28,16 @@
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:background="@android:color/darker_gray"
+                    android:contentDescription="@string/content_desc_no_photo"
                     android:cropToPadding="true"
+                    android:focusable="true"
                     android:scaleType="centerInside" />
 
                 <ImageButton
                     android:id="@+id/image_button_camera"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/content_desc_photo"
                     android:src="@drawable/ic_camera" />
             </LinearLayout>
 
@@ -44,9 +48,11 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/text_crime_title"
                     style="?android:listSeparatorTextViewStyle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:labelFor="@id/edit_text_title"
                     android:text="@string/label_crime_title" />
 
                 <EditText
@@ -54,7 +60,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/hint_crime_title"
-                    android:inputType="text" />
+                    android:inputType="text"
+                    android:labelFor="@id/text_crime_title" />
 
             </LinearLayout>
         </LinearLayout>

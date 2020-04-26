@@ -6,7 +6,8 @@
     <ImageView
         android:id="@+id/image_crime_photo"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/content_desc_have_photo" />
 
     <Button
         android:id="@+id/button_ok"
