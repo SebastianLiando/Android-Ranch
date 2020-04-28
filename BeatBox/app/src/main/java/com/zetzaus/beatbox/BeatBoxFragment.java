@@ -19,6 +19,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+/**
+ * This class displays a list of available sounds in buttons.
+ */
 public class BeatBoxFragment extends Fragment {
 
     private BeatBox mBeatBox;
