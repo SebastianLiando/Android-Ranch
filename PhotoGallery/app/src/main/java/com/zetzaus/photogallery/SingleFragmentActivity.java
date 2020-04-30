@@ -19,9 +19,13 @@ public abstract class SingleFragmentActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getSupportFragmentManager().beginTransaction()
-                .add(android.R.id.content, createFragment())
-                .commit();
+        Fragment content = getSupportFragmentManager().findFragmentById(android.R.id.content);
+
+        if (content == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .add(android.R.id.content, createFragment())
+                    .commit();
+        }
     }
 
     protected abstract Fragment createFragment();

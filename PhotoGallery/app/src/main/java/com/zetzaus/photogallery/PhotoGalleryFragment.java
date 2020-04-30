@@ -1,11 +1,17 @@
 package com.zetzaus.photogallery;
 
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.view.ViewTreeObserver;
+import android.widget.ImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,23 +22,76 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 public class PhotoGalleryFragment extends Fragment {
 
     private static final String TAG = PhotoGalleryFragment.class.getSimpleName();
+    private static final float ITEM_COLUMN_WIDTH = 400f;
 
     private RecyclerView mRecyclerView;
-    private List<GalleryItem> mItems = new ArrayList<>();
+    private PhotoAdapter mPhotoAdapter;
+    private ThumbnailDownloader<PhotoAdapter.ViewHolder> mDownloader;
 
+    private List<GalleryItem> mItems = new ArrayList<>();
+    private int mPage = 1;
+
+    /**
+     * Returns an instance of this fragment.
+     *
+     * @return an instance of this fragment.
+     */
     public static PhotoGalleryFragment newInstance() {
         PhotoGalleryFragment fragment = new PhotoGalleryFragment();
         return fragment;
     }
 
+    /**
+     * Retains this fragment on device configuration change and start the downloader thread.
+     *
+     * @param savedInstanceState the saved system state.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemTask().execute();
+        new FetchItemTask(mPage).execute();
+
+        // Start downloader thread
+        Handler handler = new Handler();
+        mDownloader = new ThumbnailDownloader<>(handler);
+        mDownloader.setDownloadListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoAdapter.ViewHolder>() {
+            @Override
+            public void onThumbnailDownloaded(PhotoAdapter.ViewHolder target, Bitmap thumbnail) {
+                Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
+                target.bindDrawable(drawable);
+            }
+        });
+        mDownloader.start();
+        // Block main thread until ready
+        mDownloader.getLooper();
+        Log.i(TAG, "Thumbnail downloader started");
+    }
+
+    /**
+     * Clear the Handler's message queue when the <code>View</code> is destroyed.
+     */
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Handle rotation
+        mDownloader.clearQueue();
+    }
+
+    /**
+     * Stops the downloader thread.
+     */
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mDownloader.quit();
+        Log.i(TAG, "Thumbnail downloader stopped");
     }
 
     @Override
@@ -42,30 +101,88 @@ public class PhotoGalleryFragment extends Fragment {
 
         // Setup RecyclerView
         mRecyclerView = v.findViewById(R.id.recycler_view_photos);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
         setupAdapter();
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (!mRecyclerView.canScrollVertically(1)) {
+                    // Get the next page
+                    new FetchItemTask(++mPage).execute();
+                }
+
+                GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
+                int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
+                int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
+                // Preload previous 10
+                for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
+                    mDownloader.queuePreload(mItems.get(i).getURL());
+                }
+                // Preload next 10
+                for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
+                    mDownloader.queuePreload(mItems.get(i).getURL());
+                }
+            }
+        });
+        mRecyclerView.getViewTreeObserver()
+                .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        int cols = Math.round(mRecyclerView.getWidth() / ITEM_COLUMN_WIDTH);
+                        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), cols));
+                        // Done and remove
+                        mRecyclerView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    }
+                });
 
         return v;
     }
 
-    private void setupAdapter(){
+    /**
+     * Attaches <code>PhotoAdapter</code> to the <code>RecyclerView</code>.
+     */
+    private void setupAdapter() {
         // AsyncTask callbacks may call when the fragment is not attached
-        if (isAdded()){
-            mRecyclerView.setAdapter(new PhotoAdapter(mItems));
+        if (isAdded()) {
+            if (mRecyclerView.getAdapter() == null) {
+                mPhotoAdapter = new PhotoAdapter(mItems);
+                mRecyclerView.setAdapter(mPhotoAdapter);
+            }
         }
     }
 
     private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
 
-        @Override
-        protected List<GalleryItem> doInBackground(Void... voids) {
-            return new FlickrFetchr().fetchItems();
+        private int mPage;
+
+        /**
+         * Creates a <code>FetchItemTask</code> for a page number.
+         *
+         * @param page the page number.
+         */
+        public FetchItemTask(int page) {
+            mPage = page;
         }
 
+        /**
+         * Fetches photo data from Flickr.
+         *
+         * @param voids nothing.
+         * @return list of photo data.
+         */
+        @Override
+        protected List<GalleryItem> doInBackground(Void... voids) {
+            return new FlickrFetchr().fetchItems(mPage);
+        }
+
+        /**
+         * Adds the photo data to the list and notify adapter of such change.
+         *
+         * @param galleryItems the new photo data to be added.
+         */
         @Override
         protected void onPostExecute(List<GalleryItem> galleryItems) {
-            mItems = galleryItems;
-            setupAdapter();
+            mItems.addAll(galleryItems);
+            mPhotoAdapter.notifyItemRangeInserted(mItems.size() - 100, 100);
         }
     }
 
@@ -79,13 +196,15 @@ public class PhotoGalleryFragment extends Fragment {
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_photo, parent, false);
             return new ViewHolder(v);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            holder.bind(mGalleryItems.get(position));
+            Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
+            holder.bindDrawable(drawable);
+            mDownloader.queueThumbnail(holder, mGalleryItems.get(position).getURL());
         }
 
         @Override
@@ -93,18 +212,17 @@ public class PhotoGalleryFragment extends Fragment {
             return mGalleryItems.size();
         }
 
-
         private class ViewHolder extends RecyclerView.ViewHolder {
 
-            private TextView mTextView;
+            private ImageView mImageView;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
-                mTextView = (TextView) itemView;
+                mImageView = (ImageView) itemView;
             }
 
-            public void bind(GalleryItem item) {
-                mTextView.setText(item.toString());
+            public void bindDrawable(Drawable drawable) {
+                mImageView.setImageDrawable(drawable);
             }
         }
     }

@@ -3,6 +3,8 @@ package com.zetzaus.photogallery;
 import android.net.Uri;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,7 +51,7 @@ public class FlickrFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public List<GalleryItem> fetchItems() {
+    public List<GalleryItem> fetchItems(int page) {
         List<GalleryItem> galleryItems = new ArrayList<>();
 
         try {
@@ -59,6 +61,7 @@ public class FlickrFetchr {
                     .appendQueryParameter("format", "json")
                     .appendQueryParameter("nojsoncallback", "1")
                     .appendQueryParameter("extras", "url_s")
+                    .appendQueryParameter("page", Integer.toString(page))
                     .build().toString();
 
             String jsonString = getUrlString(url);
@@ -70,25 +73,20 @@ public class FlickrFetchr {
         } catch (JSONException e) {
             Log.e(TAG, "Error in parsing JSON: " + e);
         }
-        
+
         return galleryItems;
     }
 
     private void parseItems(List<GalleryItem> galleryItems, JSONObject jsonObject) throws JSONException {
+        Gson gson = new Gson();
+
+        // Navigate to the photos array
         JSONObject photos = jsonObject.getJSONObject("photos");
         JSONArray photosArray = photos.getJSONArray("photo");
 
         for (int i = 0; i < photosArray.length(); i++) {
             JSONObject object = photosArray.getJSONObject(i);
-
-            GalleryItem item = new GalleryItem();
-            item.setId(object.getString("id"));
-            item.setCaption(object.getString("title"));
-
-            if (object.has("url_s")) {
-                item.setURL(object.getString("url_s"));
-            }
-
+            GalleryItem item = gson.fromJson(object.toString(), GalleryItem.class);
             galleryItems.add(item);
         }
     }

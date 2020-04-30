@@ -1,13 +1,21 @@
 package com.zetzaus.photogallery;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 import androidx.annotation.NonNull;
 
 /**
  * This class is a model class for a single image.
  */
 public class GalleryItem {
+    @SerializedName("title")
     private String mCaption;
+
+    @SerializedName("id")
     private String mId;
+
+    @SerializedName("url_s")
     private String mURL;
 
     @NonNull
