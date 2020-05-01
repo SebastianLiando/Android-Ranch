@@ -19,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import static android.view.View.GONE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -39,6 +41,7 @@ public class PhotoGalleryFragment extends Fragment {
 
     private RecyclerView mRecyclerView;
     private ProgressBar mProgressBar;
+    private SearchView mSearchView;
     private PhotoAdapter mPhotoAdapter;
     private ThumbnailDownloader<PhotoAdapter.ViewHolder> mDownloader;
 
@@ -173,23 +176,14 @@ public class PhotoGalleryFragment extends Fragment {
         inflater.inflate(R.menu.fragment_photo_gallery, menu);
 
         final MenuItem searchItem = menu.findItem(R.id.menu_search);
-        final SearchView searchView = (SearchView) searchItem.getActionView();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        mSearchView = (SearchView) searchItem.getActionView();
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 QueryPreferences.setStoredQuery(getActivity(), query);
                 resetItems();
                 updateItems(mPage);
-
-                // Close SearchView
-                searchView.setQuery("", false);
-                searchView.setIconified(true);
-
-                // Close keyboard
-                InputMethodManager manager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (manager != null) {
-                    manager.hideSoftInputFromWindow(searchView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-                }
+                closeSearchView();
 
                 return true;
             }
@@ -199,12 +193,12 @@ public class PhotoGalleryFragment extends Fragment {
                 return false;
             }
         });
-        searchView.setOnSearchClickListener(new View.OnClickListener() {
+        mSearchView.setOnSearchClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "SearchView clicked");
                 String lastQuery = QueryPreferences.getStoredQuery(getActivity());
-                searchView.setQuery(lastQuery, false);
+                mSearchView.setQuery(lastQuery, false);
             }
         });
     }
@@ -222,6 +216,7 @@ public class PhotoGalleryFragment extends Fragment {
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 resetItems();
                 updateItems(mPage);
+                closeSearchView();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -241,6 +236,11 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
+    /**
+     * Updates the list of items by downloading new items.
+     *
+     * @param page the page number to be downloaded.
+     */
     private void updateItems(int page) {
         String query = QueryPreferences.getStoredQuery(getActivity());
         new FetchItemTask(query, page).execute();
@@ -257,6 +257,22 @@ public class PhotoGalleryFragment extends Fragment {
 
         // Enable progress bar
         mProgressBar.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Collapses the SearchView and hide keyboard input.
+     */
+    private void closeSearchView() {
+        if (!mSearchView.isIconified()) {
+            // Close keyboard
+            InputMethodManager manager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (manager != null) {
+                manager.hideSoftInputFromWindow(mSearchView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+            }
+
+            // Close SearchView
+            mSearchView.onActionViewCollapsed();
+        }
     }
 
     private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
@@ -300,7 +316,7 @@ public class PhotoGalleryFragment extends Fragment {
             mPhotoAdapter.notifyDataSetChanged();
 
             // Disable progress bar
-            mProgressBar.setVisibility(View.GONE);
+            mProgressBar.setVisibility(GONE);
         }
     }
 
@@ -320,10 +336,10 @@ public class PhotoGalleryFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
-            holder.bindDrawable(drawable);
+            holder.bindPlaceholder(mGalleryItems.get(position));
             String url = mGalleryItems.get(position).getURL();
             Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
+
             if (cacheBitmap != null) {
                 holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
             } else {
@@ -339,14 +355,40 @@ public class PhotoGalleryFragment extends Fragment {
         private class ViewHolder extends RecyclerView.ViewHolder {
 
             private ImageView mImageView;
+            private TextView mTextView;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
-                mImageView = (ImageView) itemView;
+                mImageView = itemView.findViewById(R.id.image_view_photo);
+                mTextView = itemView.findViewById(R.id.text_caption);
             }
 
             public void bindDrawable(Drawable drawable) {
                 mImageView.setImageDrawable(drawable);
+            }
+
+            public void bindPlaceholder(GalleryItem item) {
+                Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
+                final String imageCaption = item.getCaption();
+                mImageView.setImageDrawable(drawable);
+
+                mImageView.setContentDescription(imageCaption);
+                mImageView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        // Display caption and darken
+                        mTextView.setVisibility(View.VISIBLE);
+                        mTextView.setText(imageCaption);
+                        // Disappear after 3 seconds
+                        Handler handler = new Handler();
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                mTextView.setVisibility(GONE);
+                            }
+                        }, 2000);
+                    }
+                });
             }
         }
     }
