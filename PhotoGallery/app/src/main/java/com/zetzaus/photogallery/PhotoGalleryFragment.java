@@ -64,8 +64,10 @@ public class PhotoGalleryFragment extends Fragment {
         mDownloader.setDownloadListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoAdapter.ViewHolder>() {
             @Override
             public void onThumbnailDownloaded(PhotoAdapter.ViewHolder target, Bitmap thumbnail) {
-                Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
-                target.bindDrawable(drawable);
+                if (target != null) {
+                    Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
+                    target.bindDrawable(drawable);
+                }
             }
         });
         mDownloader.start();
@@ -109,17 +111,28 @@ public class PhotoGalleryFragment extends Fragment {
                     // Get the next page
                     new FetchItemTask(++mPage).execute();
                 }
+            }
 
-                GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
-                int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
-                int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
-                // Preload previous 10
-                for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
-                    mDownloader.queuePreload(mItems.get(i).getURL());
-                }
-                // Preload next 10
-                for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
-                    mDownloader.queuePreload(mItems.get(i).getURL());
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_SETTLING) {
+                    GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
+                    int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
+                    int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
+                    // Preload previous 10
+                    for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
+                        String url = mItems.get(i).getURL();
+                        if (mDownloader.retrieveCache(url) == null)
+                            mDownloader.queuePreload(url);
+
+                    }
+                    // Preload next 10
+                    for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
+                        String url = mItems.get(i).getURL();
+                        if (mDownloader.retrieveCache(url) == null)
+                            mDownloader.queuePreload(url);
+
+                    }
                 }
             }
         });
@@ -204,7 +217,13 @@ public class PhotoGalleryFragment extends Fragment {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
             holder.bindDrawable(drawable);
-            mDownloader.queueThumbnail(holder, mGalleryItems.get(position).getURL());
+            String url = mGalleryItems.get(position).getURL();
+            Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
+            if (cacheBitmap != null) {
+                holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
+            } else {
+                mDownloader.queueThumbnail(holder, url);
+            }
         }
 
         @Override

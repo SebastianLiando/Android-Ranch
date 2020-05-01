@@ -45,6 +45,9 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         mResponseHandler = responseHandler;
     }
 
+    /**
+     * Initializes the <code>Handler</code> which is responsible for handling messages and initialize the cache.
+     */
     @Override
     protected void onLooperPrepared() {
         mRequestHandler = new Handler() {
@@ -67,6 +70,12 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         mLruCache = new PhotoLruCache(cacheSize);
     }
 
+    /**
+     * Sends a message to the message queue if the url is not in the cache.
+     *
+     * @param target the target to be inflated with an image.
+     * @param url    the image url to download.
+     */
     public void queueThumbnail(T target, String url) {
         Log.i(TAG, "Download from URL: " + url);
 
@@ -74,26 +83,38 @@ public class ThumbnailDownloader<T> extends HandlerThread {
             // If the url is not available (Flickr may not contain the URL)
             mRequestMap.remove(target);
         } else {
-            if (mLruCache.get(url) == null) {
-                // Put message to the message queue
-                mRequestMap.put(target, url);
-                mRequestHandler.obtainMessage(MESSAGE_DOWNLOAD, target).sendToTarget();
-            } else {
-                mDownloadListener.onThumbnailDownloaded(target, mLruCache.get(url));
-            }
+            // Put message to the message queue
+            mRequestMap.put(target, url);
+            mRequestHandler.obtainMessage(MESSAGE_DOWNLOAD, target).sendToTarget();
         }
     }
 
     /**
-     * Sends a message to preload image if the image is not in the cache.
+     * Sends a message to preload image if the image url is not in the cache.
      *
      * @param url the image url to preload.
      */
     public void queuePreload(String url) {
-        if (url != null && mLruCache.get(url) == null) {
+        if (url != null) {
             mRequestHandler.obtainMessage(MESSAGE_PRELOAD, url)
                     .sendToTarget();
         }
+    }
+
+    public Bitmap retrieveCache(String url) {
+        if (url == null) return null;
+        return mLruCache.get(url);
+    }
+
+    public Bitmap retrieveCache(T target, String url) {
+        Bitmap image = retrieveCache(url);
+
+        if (image != null) {
+            mRequestMap.remove(target);
+            return image;
+        }
+
+        return null;
     }
 
     /**
@@ -107,11 +128,17 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         }
     }
 
+    /**
+     * Downloads the given image and callback to the main thread to update the user interface.
+     *
+     * @param target the target to be set an image.
+     */
     private void handleRequest(final T target) {
         final String url = mRequestMap.get(target);
 
         if (url == null) return;
 
+        // Try from cache again
         Bitmap image = mLruCache.get(url);
         if (image == null) {
             // Download and create bitmap
