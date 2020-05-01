@@ -1,5 +1,6 @@
 package com.zetzaus.photogallery;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -17,6 +18,8 @@ import androidx.core.app.NotificationManagerCompat;
 public class NotificationUtils {
 
     private static final String NOTIFICATION_CHANNEL_ID = "Picture Channel";
+    public static final String EXTRA_NOTIFICATION = "NOTIFICATION";
+    public static final String EXTRA_REQUEST_CODE = "REQ_CODE";
 
     /**
      * Sends a notification to the user.
@@ -39,8 +42,17 @@ public class NotificationUtils {
                 .setDefaults(Notification.DEFAULT_ALL)
                 .build();
 
-        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(context);
-        managerCompat.notify(0, notification);
+//        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(context);
+//        managerCompat.notify(0, notification);
+        showBackgroundNotification(context, 0, notification);
+    }
+
+    private static void showBackgroundNotification(Context context, int requestCode, Notification notification) {
+        Intent intent = new Intent(PollService.ACTION_SHOW_NOTIFICATION);
+        intent.putExtra(EXTRA_REQUEST_CODE, requestCode);
+        intent.putExtra(EXTRA_NOTIFICATION, notification);
+        context.sendOrderedBroadcast(intent, PollService.NOTIFICATION_PERMISSION,
+                null, null, Activity.RESULT_OK, null, null);
     }
 
     /**

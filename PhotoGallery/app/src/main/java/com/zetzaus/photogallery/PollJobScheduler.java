@@ -6,6 +6,7 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
@@ -26,6 +27,8 @@ public class PollJobScheduler extends JobService {
     private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(15);
     private static final int JOB_ID = 1000;
 
+    private CheckNewAsyncTask mAsyncTask;
+
     /**
      * Checks for new image.
      *
@@ -35,8 +38,8 @@ public class PollJobScheduler extends JobService {
     @Override
     public boolean onStartJob(JobParameters params) {
         String query = QueryPreferences.getStoredQuery(PollJobScheduler.this);
-
-        new CheckNewAsyncTask(query, params).execute();
+        mAsyncTask = new CheckNewAsyncTask(query, params);
+        mAsyncTask.execute();
         return true;
     }
 
@@ -48,6 +51,7 @@ public class PollJobScheduler extends JobService {
      */
     @Override
     public boolean onStopJob(JobParameters params) {
+        if (mAsyncTask != null) mAsyncTask.cancel(true);
         return false;
     }
 

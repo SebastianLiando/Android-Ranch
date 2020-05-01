@@ -35,7 +35,10 @@ import static android.view.View.GONE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-public class PhotoGalleryFragment extends Fragment {
+/**
+ * This <code>Fragment</code> displays a grid of images taken from Flickr.
+ */
+public class PhotoGalleryFragment extends VisibleFragment {
 
     private static final String TAG = PhotoGalleryFragment.class.getSimpleName();
     private static final float ITEM_COLUMN_WIDTH = 400f;

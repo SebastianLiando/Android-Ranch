@@ -21,6 +21,8 @@ import androidx.annotation.Nullable;
 public class PollService extends IntentService {
 
     private static final String TAG = PollService.class.getSimpleName();
+    public static final String ACTION_SHOW_NOTIFICATION = BuildConfig.APPLICATION_ID + ".ACTION_SHOW_NOTIFICATION";
+    public static final String NOTIFICATION_PERMISSION = "com.zetzaus.photogallery.PRIVATE";
 
     private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(15);
 
@@ -108,6 +110,8 @@ public class PollService extends IntentService {
             alarmManager.cancel(pendingIntent);
             pendingIntent.cancel();
         }
+
+        QueryPreferences.setAlarmOn(context, isOn);
     }
 
     /**

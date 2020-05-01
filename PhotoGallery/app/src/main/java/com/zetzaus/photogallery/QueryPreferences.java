@@ -10,6 +10,7 @@ import androidx.preference.PreferenceManager;
 public class QueryPreferences {
     private static final String PREF_SEARCH_QUERY = "prefSearchQuery";
     private static final String PREF_LAST_RESULT_ID = "prefLastResultId";
+    private static final String PREF_ALARM = "prefAlarm";
 
     /**
      * Returns the saved query in the <code>SharedPreference</code>. If nothing is saved, <code>null</code> will be returned.
@@ -54,6 +55,17 @@ public class QueryPreferences {
     public static void setLastResultId(Context context, String id) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putString(PREF_LAST_RESULT_ID, id)
+                .apply();
+    }
+
+    public static boolean isAlarmOn(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(PREF_ALARM, false);
+    }
+
+    public static void setAlarmOn(Context context, boolean isAlarmOn) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putString(PREF_ALARM, Boolean.toString(isAlarmOn))
                 .apply();
     }
 }
