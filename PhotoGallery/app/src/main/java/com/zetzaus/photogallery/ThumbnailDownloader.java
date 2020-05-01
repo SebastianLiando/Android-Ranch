@@ -101,11 +101,25 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         }
     }
 
+    /**
+     * Returns the image bitmap from the cache for the corresponding url.
+     *
+     * @param url the url.
+     * @return the image bitmap.
+     */
     public Bitmap retrieveCache(String url) {
         if (url == null) return null;
         return mLruCache.get(url);
     }
 
+    /**
+     * Returns the image bitmap from the cache for the corresponding url. Additionally,
+     * this method also removes the target from the map to stop loading the image.
+     *
+     * @param target the target.
+     * @param url    the url.
+     * @return the image bitmap.
+     */
     public Bitmap retrieveCache(T target, String url) {
         Bitmap image = retrieveCache(url);
 

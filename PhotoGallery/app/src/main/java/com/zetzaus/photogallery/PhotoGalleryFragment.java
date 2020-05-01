@@ -1,5 +1,6 @@
 package com.zetzaus.photogallery;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -8,10 +9,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.SearchView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +38,7 @@ public class PhotoGalleryFragment extends Fragment {
     private static final float ITEM_COLUMN_WIDTH = 400f;
 
     private RecyclerView mRecyclerView;
+    private ProgressBar mProgressBar;
     private PhotoAdapter mPhotoAdapter;
     private ThumbnailDownloader<PhotoAdapter.ViewHolder> mDownloader;
 
@@ -56,7 +64,8 @@ public class PhotoGalleryFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        new FetchItemTask(mPage).execute();
+        setHasOptionsMenu(true);
+        updateItems(mPage);
 
         // Start downloader thread
         Handler handler = new Handler();
@@ -109,7 +118,7 @@ public class PhotoGalleryFragment extends Fragment {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (!mRecyclerView.canScrollVertically(1)) {
                     // Get the next page
-                    new FetchItemTask(++mPage).execute();
+                    updateItems(++mPage);
                 }
             }
 
@@ -147,7 +156,76 @@ public class PhotoGalleryFragment extends Fragment {
                     }
                 });
 
+        mProgressBar = v.findViewById(R.id.progress_bar);
+
         return v;
+    }
+
+    /**
+     * Inflates menu actions to the toolbar.
+     *
+     * @param menu     the menu.
+     * @param inflater the inflater.
+     */
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.fragment_photo_gallery, menu);
+
+        final MenuItem searchItem = menu.findItem(R.id.menu_search);
+        final SearchView searchView = (SearchView) searchItem.getActionView();
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                QueryPreferences.setStoredQuery(getActivity(), query);
+                resetItems();
+                updateItems(mPage);
+
+                // Close SearchView
+                searchView.setQuery("", false);
+                searchView.setIconified(true);
+
+                // Close keyboard
+                InputMethodManager manager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (manager != null) {
+                    manager.hideSoftInputFromWindow(searchView.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+                }
+
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "SearchView clicked");
+                String lastQuery = QueryPreferences.getStoredQuery(getActivity());
+                searchView.setQuery(lastQuery, false);
+            }
+        });
+    }
+
+    /**
+     * Handles option items when selected.
+     *
+     * @param item the selected option item.
+     * @return true if the action has been handled.
+     */
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_clear:
+                QueryPreferences.setStoredQuery(getActivity(), null);
+                resetItems();
+                updateItems(mPage);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     /**
@@ -163,16 +241,36 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
+    private void updateItems(int page) {
+        String query = QueryPreferences.getStoredQuery(getActivity());
+        new FetchItemTask(query, page).execute();
+    }
+
+    /**
+     * Clears the list and sets the page to the first.
+     */
+    private void resetItems() {
+        mItems.clear();
+        mPhotoAdapter = new PhotoAdapter(mItems);
+        mRecyclerView.setAdapter(mPhotoAdapter);
+        mPage = 1;
+
+        // Enable progress bar
+        mProgressBar.setVisibility(View.VISIBLE);
+    }
+
     private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
 
         private int mPage;
+        private String mQuery;
 
         /**
          * Creates a <code>FetchItemTask</code> for a page number.
          *
          * @param page the page number.
          */
-        public FetchItemTask(int page) {
+        public FetchItemTask(String query, int page) {
+            mQuery = query;
             mPage = page;
         }
 
@@ -184,7 +282,11 @@ public class PhotoGalleryFragment extends Fragment {
          */
         @Override
         protected List<GalleryItem> doInBackground(Void... voids) {
-            return new FlickrFetchr().fetchItems(mPage);
+            // Query
+            if (mQuery == null)
+                return new FlickrFetchr().fetchRecentPhotos(mPage);
+            else
+                return new FlickrFetchr().searchPhotos(mQuery, mPage);
         }
 
         /**
@@ -195,7 +297,10 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected void onPostExecute(List<GalleryItem> galleryItems) {
             mItems.addAll(galleryItems);
-            mPhotoAdapter.notifyItemRangeInserted(mItems.size() - 100, 100);
+            mPhotoAdapter.notifyDataSetChanged();
+
+            // Disable progress bar
+            mProgressBar.setVisibility(View.GONE);
         }
     }
 
