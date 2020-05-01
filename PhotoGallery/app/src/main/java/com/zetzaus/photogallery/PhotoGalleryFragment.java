@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -201,6 +202,19 @@ public class PhotoGalleryFragment extends Fragment {
                 mSearchView.setQuery(lastQuery, false);
             }
         });
+
+        MenuItem pollItem = menu.findItem(R.id.menu_toggle_poll);
+        boolean scheduled = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            scheduled = PollJobScheduler.isScheduled(getActivity());
+        else
+            scheduled = PollService.isAlarmOn(getActivity());
+
+        if (scheduled) {
+            pollItem.setTitle(getString(R.string.menu_stop_poll));
+        } else {
+            pollItem.setTitle(getString(R.string.menu_start_poll));
+        }
     }
 
     /**
@@ -217,6 +231,19 @@ public class PhotoGalleryFragment extends Fragment {
                 resetItems();
                 updateItems(mPage);
                 closeSearchView();
+                return true;
+            case R.id.menu_toggle_poll:
+                boolean active;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    active = !PollJobScheduler.isScheduled(getActivity());
+                    PollJobScheduler.scheduleJob(getActivity(), active);
+                } else {
+                    active = !PollService.isAlarmOn(getActivity());
+                    PollService.setServiceAlarm(getActivity(), active);
+                }
+
+                // Change the toolbar text
+                getActivity().invalidateOptionsMenu();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -369,8 +396,8 @@ public class PhotoGalleryFragment extends Fragment {
 
             public void bindPlaceholder(GalleryItem item) {
                 Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
+                bindDrawable(drawable);
                 final String imageCaption = item.getCaption();
-                mImageView.setImageDrawable(drawable);
 
                 mImageView.setContentDescription(imageCaption);
                 mImageView.setOnClickListener(new View.OnClickListener() {

@@ -3,4 +3,11 @@
 
     <string name="menu_search">Search</string>
     <string name="menu_clear">Clear Search</string>
+    <string name="menu_start_poll">Start Polling</string>
+    <string name="menu_stop_poll">Stop Polling</string>
+
+    <string name="notif_title_new">New Pictures Available</string>
+    <string name="notif_content_new">You have new pictures to be seen in Photo Gallery</string>
+
+    <string name="channel_desc">Notification channel about pictures</string>
 </resources>

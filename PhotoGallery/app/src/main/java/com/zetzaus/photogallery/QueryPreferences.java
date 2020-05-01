@@ -9,6 +9,7 @@ import androidx.preference.PreferenceManager;
  */
 public class QueryPreferences {
     private static final String PREF_SEARCH_QUERY = "prefSearchQuery";
+    private static final String PREF_LAST_RESULT_ID = "prefLastResultId";
 
     /**
      * Returns the saved query in the <code>SharedPreference</code>. If nothing is saved, <code>null</code> will be returned.
@@ -30,6 +31,29 @@ public class QueryPreferences {
     public static void setStoredQuery(Context context, String query) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putString(PREF_SEARCH_QUERY, query)
+                .apply();
+    }
+
+    /**
+     * Returns the last fetched image Id.
+     *
+     * @param context the context used.
+     * @return the last fetched image Id.
+     */
+    public static String getLastResultId(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(PREF_LAST_RESULT_ID, null);
+    }
+
+    /**
+     * Sets the last fetched image Id.
+     *
+     * @param context the context used.
+     * @param id      the last fetched image Id.
+     */
+    public static void setLastResultId(Context context, String id) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putString(PREF_LAST_RESULT_ID, id)
                 .apply();
     }
 }
