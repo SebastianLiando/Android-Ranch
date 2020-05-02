@@ -350,13 +350,28 @@ public class PhotoGalleryFragment extends VisibleFragment {
         }
     }
 
+    /**
+     * Custom <code>RecyclerView</code> adapter for displaying images.
+     */
     private class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.ViewHolder> {
         private List<GalleryItem> mGalleryItems;
 
+        /**
+         * Create an adapter.
+         *
+         * @param galleryItems the list of items to display.
+         */
         public PhotoAdapter(List<GalleryItem> galleryItems) {
             mGalleryItems = galleryItems;
         }
 
+        /**
+         * Creates a <code>ViewHolder</code>.
+         *
+         * @param parent   the parent layout.
+         * @param viewType the view type (not used).
+         * @return a <code>ViewHolder</code>.
+         */
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -364,6 +379,12 @@ public class PhotoGalleryFragment extends VisibleFragment {
             return new ViewHolder(v);
         }
 
+        /**
+         * Binds the <code>ViewHolder</code> with the data.
+         *
+         * @param holder   the <code>ViewHolder</code>.
+         * @param position the position.
+         */
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             // Display placeholder image
@@ -382,17 +403,30 @@ public class PhotoGalleryFragment extends VisibleFragment {
             }
         }
 
+        /**
+         * Returns the number of items to display.
+         *
+         * @return the number of items to display.
+         */
         @Override
         public int getItemCount() {
             return mGalleryItems.size();
         }
 
+        /**
+         * Custom <code>ViewHolder</code>.
+         */
         private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
 
             private ImageView mImageView;
             private TextView mTextView;
             private GalleryItem mGalleryItem;
 
+            /**
+             * Creates a <code>VewHolder</code>.
+             *
+             * @param itemView the layout.
+             */
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 mImageView = itemView.findViewById(R.id.image_view_photo);
@@ -401,21 +435,42 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 itemView.setOnLongClickListener(this);
             }
 
+            /**
+             * Sets the image.
+             *
+             * @param drawable the image.
+             */
             public void bindDrawable(Drawable drawable) {
                 mImageView.setImageDrawable(drawable);
             }
 
+            /**
+             * Sets the item data.
+             *
+             * @param galleryItem the item data.
+             */
             public void bindGalleryItem(GalleryItem galleryItem) {
                 mGalleryItem = galleryItem;
                 mImageView.setContentDescription(mGalleryItem.getCaption());
             }
 
+            /**
+             * Starts <code>PhotoPageActivity</code> when the image is clicked.
+             *
+             * @param v the clicked item.
+             */
             @Override
             public void onClick(View v) {
                 Intent webIntent = PhotoPageActivity.newIntent(getActivity(), mGalleryItem.getPhotoPageUri());
                 startActivity(webIntent);
             }
 
+            /**
+             * Displays caption when the image is held.
+             *
+             * @param v the held item.
+             * @return true (handled).
+             */
             @Override
             public boolean onLongClick(View v) {
                 // Display caption and darken

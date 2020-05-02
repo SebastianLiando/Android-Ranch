@@ -2,6 +2,7 @@ package com.zetzaus.photogallery;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -14,10 +15,14 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * This fragment displays a web page from Flickr.
+ */
 public class PhotoPageFragment extends VisibleFragment {
 
     private static final String EXTRA_URI = "Extra Uri";
@@ -26,6 +31,12 @@ public class PhotoPageFragment extends VisibleFragment {
     private WebView mWebView;
     private ProgressBar mProgressBar;
 
+    /**
+     * Returns an instance of this fragment.
+     *
+     * @param imageUri the image Uri.
+     * @return an instance of this fragment.
+     */
     public static PhotoPageFragment newInstance(Uri imageUri) {
         Bundle args = new Bundle();
         args.putParcelable(EXTRA_URI, imageUri);
@@ -35,6 +46,11 @@ public class PhotoPageFragment extends VisibleFragment {
         return fragment;
     }
 
+    /**
+     * Retrieves the image Uri.
+     *
+     * @param savedInstanceState the saved system state.
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,6 +58,14 @@ public class PhotoPageFragment extends VisibleFragment {
         mImageUri = getArguments().getParcelable(EXTRA_URI);
     }
 
+    /**
+     * Sets the fragment up.
+     *
+     * @param inflater           the layout inflater.
+     * @param container          the container to be inflated.
+     * @param savedInstanceState the saved system state.
+     * @return the inflated layout.
+     */
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -104,6 +128,11 @@ public class PhotoPageFragment extends VisibleFragment {
         return v;
     }
 
+    /**
+     * Returns true if the <code>WebView</code> can still go back.
+     *
+     * @return true if the <code>WebView</code> can still go back.
+     */
     public boolean onBackPressed() {
         if (mWebView.canGoBack()) {
             mWebView.goBack();
@@ -112,8 +141,18 @@ public class PhotoPageFragment extends VisibleFragment {
         return false;
     }
 
+    /**
+     * Starts another activity via implicit intent.
+     *
+     * @param uri the uri.
+     */
     private void loadViewIntent(Uri uri) {
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        startActivity(intent);
+        if (getActivity().getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+            startActivity(intent);
+        } else {
+            Toast.makeText(getActivity(), R.string.toast_no_activity, Toast.LENGTH_SHORT).show();
+        }
+
     }
 }

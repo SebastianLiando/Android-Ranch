@@ -13,6 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.annotation.NonNull;
 
+/**
+ * This class handles downloading the actual image file from FLickr.
+ *
+ * @param <T> the target that identifies the download.
+ */
 public class ThumbnailDownloader<T> extends HandlerThread {
 
     private static final String TAG = ThumbnailDownloader.class.getSimpleName();
@@ -27,10 +32,18 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     private ThumbnailDownloadListener<T> mDownloadListener;
     private PhotoLruCache mLruCache;
 
+    /**
+     * Callback interface that notifies target when download is complete.
+     * @param <T> the target.
+     */
     public interface ThumbnailDownloadListener<T> {
         void onThumbnailDownloaded(T target, Bitmap thumbnail);
     }
 
+    /**
+     * Sets the callback listener.
+     * @param downloadListener the callback listener.
+     */
     public void setDownloadListener(ThumbnailDownloadListener<T> downloadListener) {
         mDownloadListener = downloadListener;
     }

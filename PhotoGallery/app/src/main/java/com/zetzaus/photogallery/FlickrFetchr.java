@@ -17,6 +17,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class handles the networking with Flickr's REST API.
+ */
 public class FlickrFetchr {
 
     private static final String TAG = FlickrFetchr.class.getSimpleName();
@@ -74,11 +77,24 @@ public class FlickrFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
+    /**
+     * Returns a list of <code>GalleryItem</code> for the recently posted photos in FLickr.
+     *
+     * @param page the page number.
+     * @return a list of <code>GalleryItem</code>.
+     */
     public List<GalleryItem> fetchRecentPhotos(int page) {
         String url = buildURL(METHOD_RECENT_SEARCH, "", page);
         return downloadGalleryItems(url);
     }
 
+    /**
+     * Returns a list of <code>GalleryItem</code> for the queried search in Flickr.
+     *
+     * @param query the query key.
+     * @param page  the page number.
+     * @return a list of <code>GalleryItem</code>.
+     */
     public List<GalleryItem> searchPhotos(String query, int page) {
         String url = buildURL(METHOD_SEARCH, query, page);
         return downloadGalleryItems(url);
@@ -103,6 +119,12 @@ public class FlickrFetchr {
         return builder.build().toString();
     }
 
+    /**
+     * Returns a list of <code>GalleryItem</code> object from the url by parsing the json file.
+     *
+     * @param url the url.
+     * @return a list of <code>GalleryItem</code>.
+     */
     private List<GalleryItem> downloadGalleryItems(String url) {
         List<GalleryItem> galleryItems = new ArrayList<>();
 
