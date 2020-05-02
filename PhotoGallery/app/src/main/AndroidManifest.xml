@@ -19,6 +19,18 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <activity android:name=".PhotoPageActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+        <activity android:name=".PhotoGalleryActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".SingleFragmentActivity" />
+
         <receiver
             android:name=".StartupReceiver"
             android:enabled="true"
@@ -27,7 +39,6 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-
         <receiver
             android:name=".NotificationReceiver"
             android:enabled="true"
@@ -40,19 +51,9 @@
         <service
             android:name=".PollService"
             android:exported="false" />
-
         <service
             android:name=".PollJobScheduler"
             android:permission="android.permission.BIND_JOB_SERVICE" />
-
-        <activity android:name=".PhotoGalleryActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".SingleFragmentActivity" />
     </application>
 
 </manifest>

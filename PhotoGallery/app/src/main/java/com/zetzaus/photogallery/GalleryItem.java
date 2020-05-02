@@ -1,6 +1,7 @@
 package com.zetzaus.photogallery;
 
-import com.google.gson.annotations.Expose;
+import android.net.Uri;
+
 import com.google.gson.annotations.SerializedName;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,9 @@ public class GalleryItem {
 
     @SerializedName("url_s")
     private String mURL;
+
+    @SerializedName("owner")
+    private String mOwner;
 
     @NonNull
     @Override
@@ -46,5 +50,25 @@ public class GalleryItem {
 
     public void setURL(String URL) {
         mURL = URL;
+    }
+
+    public String getOwner() {
+        return mOwner;
+    }
+
+    public void setOwner(String owner) {
+        mOwner = owner;
+    }
+
+    /**
+     * Returns the Uri for the photo page in the Flickr website.
+     *
+     * @return the Uri for the photo page in the Flickr website.
+     */
+    public Uri getPhotoPageUri() {
+        return Uri.parse("https://www.flickr.com/photos/").buildUpon()
+                .appendPath(mOwner)
+                .appendPath(mId)
+                .build();
     }
 }

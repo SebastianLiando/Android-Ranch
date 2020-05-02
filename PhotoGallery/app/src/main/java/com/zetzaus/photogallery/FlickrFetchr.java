@@ -30,6 +30,13 @@ public class FlickrFetchr {
             .appendQueryParameter("extras", "url_s")
             .build();
 
+    /**
+     * Returns a byte array for the data at the url page.
+     *
+     * @param urlSpec the url of the page.
+     * @return a byte array containing the data.
+     * @throws IOException if the url is null.
+     */
     public byte[] getUrlBytes(String urlSpec) throws IOException {
         // Open Connection
         URL url = new URL(urlSpec);
@@ -55,6 +62,14 @@ public class FlickrFetchr {
         }
     }
 
+    /**
+     * Returns the <code>String</code> data of the page located at the url.
+     *
+     * @param urlSpec the url of the page.
+     * @return the <code>String</code> of the page located at the url.
+     * @throws IOException if the url is null.
+     * @see FlickrFetchr#getUrlBytes(String)
+     */
     public String getUrlString(String urlSpec) throws IOException {
         return new String(getUrlBytes(urlSpec));
     }
@@ -105,6 +120,13 @@ public class FlickrFetchr {
         return galleryItems;
     }
 
+    /**
+     * Add items from the json file to the list.
+     *
+     * @param galleryItems the list to be added.
+     * @param jsonObject   the JSON object file.
+     * @throws JSONException if the parsing failed.
+     */
     private void parseItems(List<GalleryItem> galleryItems, JSONObject jsonObject) throws JSONException {
         Gson gson = new Gson();
 

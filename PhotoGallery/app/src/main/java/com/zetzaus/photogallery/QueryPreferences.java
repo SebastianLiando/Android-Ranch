@@ -58,11 +58,23 @@ public class QueryPreferences {
                 .apply();
     }
 
+    /**
+     * Returns the state of the alarm persisted.
+     *
+     * @param context the context used.
+     * @return the state of the alarm persisted.
+     */
     public static boolean isAlarmOn(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean(PREF_ALARM, false);
     }
 
+    /**
+     * Sets the state of the alarm to the storage.
+     *
+     * @param context   the context used.
+     * @param isAlarmOn the state of the alarm.
+     */
     public static void setAlarmOn(Context context, boolean isAlarmOn) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putString(PREF_ALARM, Boolean.toString(isAlarmOn))

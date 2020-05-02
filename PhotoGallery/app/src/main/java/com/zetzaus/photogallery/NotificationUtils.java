@@ -42,11 +42,16 @@ public class NotificationUtils {
                 .setDefaults(Notification.DEFAULT_ALL)
                 .build();
 
-//        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(context);
-//        managerCompat.notify(0, notification);
         showBackgroundNotification(context, 0, notification);
     }
 
+    /**
+     * Sends a broadcast message that determine whether the notification is displayed to the user or not.
+     *
+     * @param context      the context.
+     * @param requestCode  the request code.
+     * @param notification the notification to show.
+     */
     private static void showBackgroundNotification(Context context, int requestCode, Notification notification) {
         Intent intent = new Intent(PollService.ACTION_SHOW_NOTIFICATION);
         intent.putExtra(EXTRA_REQUEST_CODE, requestCode);

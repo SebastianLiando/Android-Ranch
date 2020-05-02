@@ -1,6 +1,7 @@
 package com.zetzaus.photogallery;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -27,7 +28,6 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -366,7 +366,12 @@ public class PhotoGalleryFragment extends VisibleFragment {
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            holder.bindPlaceholder(mGalleryItems.get(position));
+            // Display placeholder image
+            Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
+            holder.bindDrawable(drawable);
+
+            holder.bindGalleryItem(mGalleryItems.get(position));
+
             String url = mGalleryItems.get(position).getURL();
             Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
 
@@ -382,43 +387,49 @@ public class PhotoGalleryFragment extends VisibleFragment {
             return mGalleryItems.size();
         }
 
-        private class ViewHolder extends RecyclerView.ViewHolder {
+        private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
 
             private ImageView mImageView;
             private TextView mTextView;
+            private GalleryItem mGalleryItem;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 mImageView = itemView.findViewById(R.id.image_view_photo);
                 mTextView = itemView.findViewById(R.id.text_caption);
+                itemView.setOnClickListener(this);
+                itemView.setOnLongClickListener(this);
             }
 
             public void bindDrawable(Drawable drawable) {
                 mImageView.setImageDrawable(drawable);
             }
 
-            public void bindPlaceholder(GalleryItem item) {
-                Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
-                bindDrawable(drawable);
-                final String imageCaption = item.getCaption();
+            public void bindGalleryItem(GalleryItem galleryItem) {
+                mGalleryItem = galleryItem;
+                mImageView.setContentDescription(mGalleryItem.getCaption());
+            }
 
-                mImageView.setContentDescription(imageCaption);
-                mImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent webIntent = PhotoPageActivity.newIntent(getActivity(), mGalleryItem.getPhotoPageUri());
+                startActivity(webIntent);
+            }
+
+            @Override
+            public boolean onLongClick(View v) {
+                // Display caption and darken
+                mTextView.setVisibility(View.VISIBLE);
+                mTextView.setText(mGalleryItem.getCaption());
+                // Disappear after 3 seconds
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
                     @Override
-                    public void onClick(View v) {
-                        // Display caption and darken
-                        mTextView.setVisibility(View.VISIBLE);
-                        mTextView.setText(imageCaption);
-                        // Disappear after 3 seconds
-                        Handler handler = new Handler();
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                mTextView.setVisibility(GONE);
-                            }
-                        }, 2000);
+                    public void run() {
+                        mTextView.setVisibility(GONE);
                     }
-                });
+                }, 2000);
+                return true;
             }
         }
     }
