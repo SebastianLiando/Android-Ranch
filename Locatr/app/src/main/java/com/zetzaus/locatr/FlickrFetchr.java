@@ -90,7 +90,7 @@ public class FlickrFetchr {
     }
 
     /**
-     * Returns a list of <code>GalleryItem</code> for the queried search in Flickr.
+     * Returns a {@link List} of {@link GalleryItem} for the queried search in Flickr.
      *
      * @param query the query key.
      * @param page  the page number.
@@ -101,6 +101,12 @@ public class FlickrFetchr {
         return downloadGalleryItems(url);
     }
 
+    /**
+     * Returns a {@link List} of {@link GalleryItem} from the given location.
+     *
+     * @param location the location.
+     * @return a {@link List} of {@link GalleryItem}
+     */
     public List<GalleryItem> searchPhotos(Location location) {
         String url = buildURL(location);
         return downloadGalleryItems(url);
@@ -125,6 +131,12 @@ public class FlickrFetchr {
         return builder.build().toString();
     }
 
+    /**
+     * Returns the URL for images in the location.
+     *
+     * @param location the location.
+     * @return the URL.
+     */
     private String buildURL(Location location) {
         return ENDPOINT.buildUpon()
                 .appendQueryParameter("method", METHOD_SEARCH)

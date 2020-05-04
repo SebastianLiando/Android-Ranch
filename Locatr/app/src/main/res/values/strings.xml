@@ -3,4 +3,8 @@
 
     <string name="action_search">Find an image near you</string>
 
+    <string name="toast_failed">Unable to find an image near you.</string>
+
+    <string name="dialog_message_rationale">Locatr uses location data to find images near you on Flickr.</string>
+
 </resources>
