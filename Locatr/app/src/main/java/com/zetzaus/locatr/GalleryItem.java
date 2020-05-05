@@ -111,18 +111,38 @@ public class GalleryItem {
         mOwner = owner;
     }
 
+    /**
+     * Returns the latitude of the photo upload location.
+     *
+     * @return the latitude.
+     */
     public double getLatitude() {
         return mLatitude;
     }
 
+    /**
+     * Sets the latitude of the photo upload location.
+     *
+     * @param latitude the latitude.
+     */
     public void setLatitude(double latitude) {
         mLatitude = latitude;
     }
 
+    /**
+     * Returns the longitude of the photo upload location.
+     *
+     * @return the longitude.
+     */
     public double getLongitude() {
         return mLongitude;
     }
 
+    /**
+     * Sets the longitude of the photo upload location.
+     *
+     * @param longitude the longitude.
+     */
     public void setLongitude(double longitude) {
         mLongitude = longitude;
     }

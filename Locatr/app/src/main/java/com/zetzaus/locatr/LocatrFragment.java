@@ -258,6 +258,9 @@ public class LocatrFragment extends SupportMapFragment {
                 }).show();
     }
 
+    /**
+     * Displays the user's location and the image location on the map.
+     */
     private void updateUI() {
         if (mGoogleMap == null || mImageBitmap == null) return;
 
