@@ -12,12 +12,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -30,12 +27,23 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -43,9 +51,9 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 /**
- * A simple {@link Fragment} subclass.
+ * A simple {@link SupportMapFragment} subclass.
  */
-public class LocatrFragment extends Fragment {
+public class LocatrFragment extends SupportMapFragment {
 
     private static final String TAG = LocatrFragment.class.getSimpleName();
     private static final String[] PERMISSIONS = new String[]{
@@ -55,7 +63,13 @@ public class LocatrFragment extends Fragment {
 
     private static final int REQUEST_LOCATION = 0;
 
-    private ImageView mImageView;
+    private Bitmap mImageBitmap;
+    private GalleryItem mImageItem;
+    private Location mCurrentLocation;
+    private GoogleMap mGoogleMap;
+
+//    private ImageView mImageView;
+//    private ProgressBar mProgressBar;
 
     private FusedLocationProviderClient mClient;
 
@@ -78,6 +92,15 @@ public class LocatrFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         mClient = LocationServices.getFusedLocationProviderClient(getActivity());
+
+        // Fetch map
+        getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                mGoogleMap = googleMap;
+                updateUI();
+            }
+        });
     }
 
     /**
@@ -106,6 +129,7 @@ public class LocatrFragment extends Fragment {
             case R.id.action_search:
                 if (hasPermission()) {
                     findImage();
+//                    mProgressBar.setVisibility(View.VISIBLE);
                 } else {
                     getPermission();
                 }
@@ -115,23 +139,24 @@ public class LocatrFragment extends Fragment {
         }
     }
 
-    /**
-     * Inflates the {@link Fragment}'s layout.
-     *
-     * @param inflater           the layout inflater.
-     * @param container          the container to be inflated.
-     * @param savedInstanceState the saved system state.
-     * @return the inflated {@link Fragment}.
-     */
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_locatr, container, false);
-
-        mImageView = v.findViewById(R.id.image_view);
-
-        return v;
-    }
+//    /**
+//     * Inflates the {@link Fragment}'s layout.
+//     *
+//     * @param inflater           the layout inflater.
+//     * @param container          the container to be inflated.
+//     * @param savedInstanceState the saved system state.
+//     * @return the inflated {@link Fragment}.
+//     */
+//    @Override
+//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+//                             Bundle savedInstanceState) {
+//        View v = inflater.inflate(R.layout.fragment_locatr, container, false);
+//
+//        mImageView = v.findViewById(R.id.image_view);
+//        mProgressBar = v.findViewById(R.id.progress_download);
+//
+//        return v;
+//    }
 
     /**
      * Gets the user's location and find images from the location in Flickr.
@@ -233,6 +258,32 @@ public class LocatrFragment extends Fragment {
                 }).show();
     }
 
+    private void updateUI() {
+        if (mGoogleMap == null || mImageBitmap == null) return;
+
+        LatLng imagePoint = new LatLng(mImageItem.getLatitude(), mImageItem.getLongitude());
+        LatLng userPoint = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
+        LatLngBounds mapBound = new LatLngBounds.Builder()
+                .include(imagePoint)
+                .include(userPoint)
+                .build();
+
+        int margin = getResources().getDimensionPixelSize(R.dimen.margin_inset_map);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngBounds(mapBound, margin);
+        mGoogleMap.animateCamera(cameraUpdate);
+
+        BitmapDescriptor image = BitmapDescriptorFactory.fromBitmap(mImageBitmap);
+        MarkerOptions imageMarker = new MarkerOptions()
+                .position(imagePoint)
+                .icon(image);
+        MarkerOptions userMarker = new MarkerOptions().position(userPoint);
+        mGoogleMap.clear();
+        mGoogleMap.addMarker(imageMarker);
+        mGoogleMap.addMarker(userMarker);
+
+    }
+
     /**
      * A custom {@link AsyncTask} for downloading the image and displaying it.
      */
@@ -240,6 +291,7 @@ public class LocatrFragment extends Fragment {
 
         private GalleryItem mGalleryItem;
         private Bitmap mBitmap;
+        private Location mLocation;
 
         /**
          * Downloads the image into a bitmap.
@@ -249,14 +301,16 @@ public class LocatrFragment extends Fragment {
          */
         @Override
         protected Void doInBackground(Location... locations) {
-            Location location = locations[0];
+            mLocation = locations[0];
+
             FlickrFetchr fetchr = new FlickrFetchr();
 
-            List<GalleryItem> result = fetchr.searchPhotos(location);
+            List<GalleryItem> result = fetchr.searchPhotos(mLocation);
 
             if (result.isEmpty()) return null;
 
-            mGalleryItem = result.get(0);
+            Random random = new Random();
+            mGalleryItem = result.get(random.nextInt(result.size()));
 
             try {
                 byte[] data = fetchr.getUrlBytes(mGalleryItem.getURL());
@@ -275,8 +329,12 @@ public class LocatrFragment extends Fragment {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            mImageView.setImageBitmap(mBitmap);
-
+            mImageBitmap = mBitmap;
+            mImageItem = mGalleryItem;
+            mCurrentLocation = mLocation;
+            updateUI();
+//            mImageView.setImageBitmap(mBitmap);
+//            mProgressBar.setVisibility(View.GONE);
         }
     }
 }

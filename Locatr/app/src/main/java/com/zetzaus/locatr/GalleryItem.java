@@ -22,6 +22,12 @@ public class GalleryItem {
     @SerializedName("owner")
     private String mOwner;
 
+    @SerializedName("latitude")
+    private double mLatitude;
+
+    @SerializedName("longitude")
+    private double mLongitude;
+
     /**
      * Returns the caption.
      *
@@ -103,6 +109,22 @@ public class GalleryItem {
      */
     public void setOwner(String owner) {
         mOwner = owner;
+    }
+
+    public double getLatitude() {
+        return mLatitude;
+    }
+
+    public void setLatitude(double latitude) {
+        mLatitude = latitude;
+    }
+
+    public double getLongitude() {
+        return mLongitude;
+    }
+
+    public void setLongitude(double longitude) {
+        mLongitude = longitude;
     }
 
     /**
