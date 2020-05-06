@@ -15,6 +15,7 @@ import java.util.Locale;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 public class CheatActivity extends AppCompatActivity {
 
@@ -22,8 +23,7 @@ public class CheatActivity extends AppCompatActivity {
     private static final String EXTRA_CHEATED = BuildConfig.APPLICATION_ID + "EXTRA_CHEATED";
     private static final String CHEATED_KEY = "cheated_key";
 
-    private boolean mIsAnswerTrue;
-    private boolean mIsCheated = false;
+    private CheatViewModel mCheatViewModel;
 
     private Button mShowButton;
     private TextView mTextAnswer;
@@ -63,9 +63,11 @@ public class CheatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cheat);
 
+        mCheatViewModel = new ViewModelProvider(this).get(CheatViewModel.class);
+
         // Get intent data
-        mIsAnswerTrue = getIntent().getBooleanExtra(EXTRA_ANSWER, false);
-        mIsCheated = getIntent().getBooleanExtra(EXTRA_CHEATED, false);
+        mCheatViewModel.setAnswerTrue(getIntent().getBooleanExtra(EXTRA_ANSWER, false));
+        mCheatViewModel.setCheated(getIntent().getBooleanExtra(EXTRA_CHEATED, false));
 
         mTextAnswer = findViewById(R.id.text_cheat);
 
@@ -75,7 +77,7 @@ public class CheatActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 displayAnswer();
-                mIsCheated = true;
+                mCheatViewModel.setCheated(true);
 
                 // Animation only for SDK 21 and above
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -102,11 +104,11 @@ public class CheatActivity extends AppCompatActivity {
 
         // Restore state
         if (savedInstanceState != null) {
-            mIsCheated = savedInstanceState.getBoolean(CHEATED_KEY);
+            mCheatViewModel.setCheated(savedInstanceState.getBoolean(CHEATED_KEY));
         }
 
         // Check if already cheated
-        if (mIsCheated) {
+        if (mCheatViewModel.isCheated()) {
             displayAnswer();
             mShowButton.setVisibility(View.GONE);
         }
@@ -120,14 +122,14 @@ public class CheatActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean(CHEATED_KEY, mIsCheated);
+        outState.putBoolean(CHEATED_KEY, mCheatViewModel.isCheated());
     }
 
     /**
      * Display the answer for the question to the user.
      */
     private void displayAnswer() {
-        if (mIsAnswerTrue) mTextAnswer.setText(R.string.button_true);
+        if (mCheatViewModel.isAnswerTrue()) mTextAnswer.setText(R.string.button_true);
         else mTextAnswer.setText(R.string.button_false);
     }
 
@@ -148,7 +150,7 @@ public class CheatActivity extends AppCompatActivity {
      */
     @Override
     public void onBackPressed() {
-        setAnswerShownResult(mIsCheated);
+        setAnswerShownResult(mCheatViewModel.isCheated());
         super.onBackPressed();
     }
 }

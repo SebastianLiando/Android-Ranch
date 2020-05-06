@@ -14,6 +14,7 @@ import java.util.Locale;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 /**
  * This activity is the main activity of the application. It displays a question in a form of a statement which
@@ -30,18 +31,7 @@ public class QuizActivity extends AppCompatActivity {
     private TextView mResultText;
     private TextView mCheatRemainingText;
 
-    private final Question[] mQuestionBank = {
-            new Question(R.string.question_one, true),
-            new Question(R.string.question_two, true),
-            new Question(R.string.question_three, false),
-            new Question(R.string.question_four, false),
-            new Question(R.string.question_five, true),
-    };
-
-    private int mCurrentIndex = 0;
-    private int mAnsweredMask = 0;
-    private int mCheatMask = 0;
-    private int mCorrectAnswer = 0;
+    private QuizViewModel mViewModel;
 
     // Constants
     private static final String INDEX_KEY = "index_key";
@@ -62,12 +52,15 @@ public class QuizActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_quiz);
 
+        // Retrieve ViewModel
+        mViewModel = new ViewModelProvider(this).get(QuizViewModel.class);
+
         // Restore state
         if (savedInstanceState != null) {
-            mCurrentIndex = savedInstanceState.getInt(INDEX_KEY);
-            mAnsweredMask = savedInstanceState.getInt(ANSWER_MASK_KEY);
-            mCorrectAnswer = savedInstanceState.getInt(CORRECT_ANSWER_KEY);
-            mCheatMask = savedInstanceState.getInt(CHEAT_MASK_KEY);
+            mViewModel.setCurrentIndex(savedInstanceState.getInt(INDEX_KEY));
+            mViewModel.setAnsweredMask(savedInstanceState.getInt(ANSWER_MASK_KEY));
+            mViewModel.setCorrectAnswer(savedInstanceState.getInt(CORRECT_ANSWER_KEY));
+            mViewModel.setCheatMask(savedInstanceState.getInt(CHEAT_MASK_KEY));
         }
 
         // Make the true button listens to click. It will display a toast.
@@ -93,7 +86,7 @@ public class QuizActivity extends AppCompatActivity {
         mNextButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                mViewModel.nextQuestion();
                 updateQuestionText();
             }
         });
@@ -104,7 +97,7 @@ public class QuizActivity extends AppCompatActivity {
         mPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCurrentIndex = (mCurrentIndex - 1 == -1) ? (mQuestionBank.length - 1) : (mCurrentIndex - 1);
+                mViewModel.prevQuestion();
                 updateQuestionText();
             }
         });
@@ -115,7 +108,7 @@ public class QuizActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent cheatIntent = CheatActivity.newIntent(QuizActivity.this,
-                        mQuestionBank[mCurrentIndex].isAnswerTrue(), isCurrentQuestionCheated());
+                        mViewModel.getQuestionAnswer(), mViewModel.isCurrentQuestionCheated());
                 startActivityForResult(cheatIntent, CHEAT_REQUEST_CODE);
             }
         });
@@ -129,16 +122,14 @@ public class QuizActivity extends AppCompatActivity {
         mQuestionText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+                mViewModel.nextQuestion();
                 updateQuestionText();
             }
         });
 
         // Setup result text
         mResultText = findViewById(R.id.text_result);
-        if (isAllAnswered()) {
-            mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
-        }
+        updateScoreText();
     }
 
     /**
@@ -148,7 +139,7 @@ public class QuizActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        int cheatCount = getCheatCount();
+        int cheatCount = mViewModel.getCheatCount();
         // Setup remaining cheats text
         mCheatRemainingText = findViewById(R.id.text_cheats_remaining);
         mCheatRemainingText.setText(String.format(Locale.getDefault(),
@@ -165,10 +156,10 @@ public class QuizActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt(INDEX_KEY, mCurrentIndex);
-        outState.putInt(ANSWER_MASK_KEY, mAnsweredMask);
-        outState.putInt(CORRECT_ANSWER_KEY, mCorrectAnswer);
-        outState.putInt(CHEAT_MASK_KEY, mCheatMask);
+        outState.putInt(INDEX_KEY, mViewModel.getCurrentIndex());
+        outState.putInt(ANSWER_MASK_KEY, mViewModel.getAnsweredMask());
+        outState.putInt(CORRECT_ANSWER_KEY, mViewModel.getCorrectAnswer());
+        outState.putInt(CHEAT_MASK_KEY, mViewModel.getCheatMask());
     }
 
     /**
@@ -184,9 +175,8 @@ public class QuizActivity extends AppCompatActivity {
         if (requestCode == CHEAT_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 if (data == null) return;
-                int isCheater = CheatActivity.wasAnswerShown(data) ? 1 : 0;
-                int cheaterMask = isCheater << mCurrentIndex;
-                mCheatMask = mCheatMask | cheaterMask;
+                boolean isCheater = CheatActivity.wasAnswerShown(data);
+                if (isCheater) mViewModel.setCurrentQuestionCheated();
             }
         }
     }
@@ -195,10 +185,10 @@ public class QuizActivity extends AppCompatActivity {
      * Updates the question text to the question pointed by the current index.
      */
     private void updateQuestionText() {
-        mQuestionText.setText(mQuestionBank[mCurrentIndex].getResId());
+        mQuestionText.setText(mViewModel.getQuestionId());
 
         // Disable answer buttons if the question has been answered
-        if (isCurrentQuestionAnswered()) {
+        if (mViewModel.isCurrentQuestionAnswered()) {
             setAnswerButtonsState(false);
         } else {
             setAnswerButtonsState(true);
@@ -211,11 +201,11 @@ public class QuizActivity extends AppCompatActivity {
      * @param userAnswer true if the button the user pressed is the true button.
      */
     private void checkAnswer(boolean userAnswer) {
-        boolean answer = mQuestionBank[mCurrentIndex].isAnswerTrue();
-        if (!isCurrentQuestionCheated()) {
+        boolean answer = mViewModel.getQuestionAnswer();
+        if (!mViewModel.isCurrentQuestionCheated()) {
             if (answer == userAnswer) {
                 createToastTop(R.string.toast_correct).show();
-                mCorrectAnswer++;
+                mViewModel.setCorrectAnswer(mViewModel.getCorrectAnswer() + 1);
             } else {
                 createToastTop(R.string.toast_incorrect).show();
             }
@@ -224,24 +214,17 @@ public class QuizActivity extends AppCompatActivity {
         }
 
         // Mark as answered
-        mAnsweredMask = mAnsweredMask | (1 << mCurrentIndex);
+        mViewModel.setCurrentQuestionAnswered();
         setAnswerButtonsState(false);
 
-        // Display score if all has been answered
-        if (isAllAnswered()) {
-            mResultText.setText(String.format(Locale.getDefault(), "%d / %d", mCorrectAnswer, mQuestionBank.length));
-        }
+        updateScoreText();
     }
 
-    /**
-     * Returns true if the current question has been cheated.
-     *
-     * @return true if the current question has been cheated.
-     */
-    private boolean isCurrentQuestionCheated() {
-        int mask = 1 << mCurrentIndex;
-
-        return (mask & mCheatMask) != 0;
+    private void updateScoreText() {
+        // Display score if all has been answered
+        if (mViewModel.isAllAnswered()) {
+            mResultText.setText(mViewModel.getResult());
+        }
     }
 
     /**
@@ -255,44 +238,6 @@ public class QuizActivity extends AppCompatActivity {
         Toast toast = Toast.makeText(this, stringId, Toast.LENGTH_SHORT);
         toast.setGravity(Gravity.TOP, 0, 200);
         return toast;
-    }
-
-    /**
-     * Returns true if the current question has been answered.
-     *
-     * @return true if the current question has been answered.
-     */
-    private boolean isCurrentQuestionAnswered() {
-        int mask = 1 << mCurrentIndex;
-
-        return (mAnsweredMask & mask) != 0;
-    }
-
-    /**
-     * Returns true if all questions has been answered.
-     *
-     * @return true if all questions has been answered.
-     */
-    private boolean isAllAnswered() {
-        int mask = (1 << (mQuestionBank.length)) - 1;
-        return mask == mAnsweredMask;
-    }
-
-    /**
-     * Returns the number of cheats the user has used. This functions uses the Brian Kernighan's algorithm.
-     *
-     * @return the number of cheats the user has used
-     */
-    private int getCheatCount() {
-        int count = 0;
-        int tmpCheatMask = mCheatMask;
-
-        while (tmpCheatMask != 0) {
-            tmpCheatMask = tmpCheatMask & (tmpCheatMask - 1);
-            count++;
-        }
-
-        return count;
     }
 
     /**
