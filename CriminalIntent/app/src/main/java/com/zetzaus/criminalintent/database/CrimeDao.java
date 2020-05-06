@@ -7,7 +7,10 @@ import java.util.UUID;
 
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
+import androidx.room.Delete;
+import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 @Dao
 public interface CrimeDao {
@@ -19,4 +22,13 @@ public interface CrimeDao {
 
     @Query("SELECT * FROM " + CrimeDbSchema.CrimeTable.NAME)
     LiveData<List<Crime>> getCrimes();
+
+    @Insert
+    void addCrime(Crime crime);
+
+    @Update
+    void updateCrime(Crime crime);
+
+    @Delete
+    void deleteCrime(Crime crime);
 }

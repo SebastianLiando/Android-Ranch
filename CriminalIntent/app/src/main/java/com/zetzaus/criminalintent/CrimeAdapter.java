@@ -9,6 +9,9 @@ import android.widget.TextView;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
@@ -17,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
  *
  * @see CrimeListActivity
  */
-public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> {
+public class CrimeAdapter extends ListAdapter<Crime, CrimeAdapter.ViewHolder> {
 
     private static final int TYPE_NORMAL = 0;
     private static final int TYPE_SERIOUS = 1;
@@ -25,13 +28,19 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
     private List<Crime> mCrimes;
     private CrimeListFragment.Callback mCallback;
 
-    /**
-     * Constructs a <code>CrimeAdapter</code> by initializing the list of crimes.
-     *
-     * @param crimes the list of crimes.
-     */
-    public CrimeAdapter(List<Crime> crimes) {
-        mCrimes = crimes;
+    public CrimeAdapter() {
+        super(new DiffUtil.ItemCallback<Crime>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull Crime oldItem, @NonNull Crime newItem) {
+                return oldItem.getId() == newItem.getId();
+            }
+
+            @Override
+            public boolean areContentsTheSame(@NonNull Crime oldItem, @NonNull Crime newItem) {
+                return oldItem.equals(newItem);
+            }
+        });
+
     }
 
     /**
@@ -62,14 +71,10 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
         holder.bind(crimeToBind);
     }
 
-    /**
-     * Returns the number of crimes in the list.
-     *
-     * @return the number of crimes in the list.
-     */
     @Override
-    public int getItemCount() {
-        return mCrimes.size();
+    public void submitList(@Nullable List<Crime> list) {
+        super.submitList(list);
+        mCrimes = list;
     }
 
     /**
@@ -85,15 +90,6 @@ public class CrimeAdapter extends RecyclerView.Adapter<CrimeAdapter.ViewHolder> 
         if (crime.isSolved()) return TYPE_NORMAL;
         if (crime.isRequiresPolice()) return TYPE_SERIOUS;
         return TYPE_NORMAL;
-    }
-
-    /**
-     * Sets the list of crime.
-     *
-     * @param crimes the list of crime to set.
-     */
-    public void setCrimes(List<Crime> crimes) {
-        mCrimes = crimes;
     }
 
     /**

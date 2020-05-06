@@ -42,6 +42,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProvider;
 
 /**
  * This fragment displays the details of a crime.
@@ -72,6 +73,8 @@ public class CrimeFragment extends Fragment {
     private ImageView mImagePhoto;
     private CheckBox mCheckBoxSolved;
     private CheckBox mCheckBoxPolice;
+
+    private CrimeDetailsViewModel mViewModel;
 
     public interface Callback {
         void onCrimeUpdated(Crime crime);
@@ -113,6 +116,11 @@ public class CrimeFragment extends Fragment {
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_UUID);
         mCrime = CrimeLab.getInstance(getActivity()).getCrime(crimeId);
         mPhoto = CrimeLab.getInstance(getActivity()).getCrimePhoto(mCrime);
+
+        mViewModel = new ViewModelProvider(this).get(CrimeDetailsViewModel.class);
+//        TODO: live data
+//        mViewModel.loadCrime(crimeId);
+
         // Tell about menu
         setHasOptionsMenu(true);
     }
@@ -315,6 +323,12 @@ public class CrimeFragment extends Fragment {
         CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        mViewModel.saveCrime(mCrime);
+    }
+
     /**
      * Handles reply from another activity/fragment to update the crime's data.
      *
@@ -412,6 +426,19 @@ public class CrimeFragment extends Fragment {
                 updateCrime();
             }
         }
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+//         TODO: live data
+//        mViewModel.getCrimeLiveData().observe(getViewLifecycleOwner(), new Observer<Crime>() {
+//            @Override
+//            public void onChanged(Crime crime) {
+//                mCrime = crime;
+//                updateUI();
+//            }
+//        });
     }
 
     /**
@@ -526,6 +553,22 @@ public class CrimeFragment extends Fragment {
     private void deleteCrime() {
         CrimeLab.getInstance(getActivity()).deleteCrime(mCrime.getId());
         mCallback.onCrimeDeleted();
+    }
+
+    /**
+     * To be called by live data observe.
+     */
+    private void updateUI() {
+        mEditTextTitle.setText(mCrime.getTitle());
+        mDateButton.setText(mCrime.getDateString());
+        mTimeButton.setText(mCrime.getTimeString());
+        mCheckBoxPolice.setChecked(mCrime.isRequiresPolice());
+        mCheckBoxPolice.setChecked(mCrime.isSolved());
+
+        //Accessibility purposes
+        mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
+        mTimeButton.setContentDescription(getString(R.string.content_desc_crime_time, mCrime.getTimeString()));
+        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, mCrime.getSuspect()));
     }
 
 }

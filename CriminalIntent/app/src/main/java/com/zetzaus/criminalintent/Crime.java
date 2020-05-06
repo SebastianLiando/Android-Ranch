@@ -8,8 +8,11 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 /**
@@ -20,6 +23,7 @@ public class Crime {
 
     @PrimaryKey
     @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.UUID)
+    @NonNull
     private UUID mId;
 
     @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.TITLE)
@@ -48,6 +52,7 @@ public class Crime {
      *
      * @param id the id of the crime.
      */
+    @Ignore
     public Crime(UUID id) {
         mId = id;
         mDate = new Date();
@@ -60,6 +65,10 @@ public class Crime {
      */
     public UUID getId() {
         return mId;
+    }
+
+    public void setId(UUID id) {
+        mId = id;
     }
 
     /**
@@ -199,5 +208,20 @@ public class Crime {
      */
     public String getPhotoFileName() {
         return "IMG_" + getId().toString() + ".jpg";
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        Crime otherCrime = (Crime) obj;
+        if (!mId.equals(otherCrime.getId()) ||
+                !mTitle.equals(otherCrime.getTitle()) ||
+                mSolved != otherCrime.isSolved() ||
+                mRequiresPolice != otherCrime.isRequiresPolice() ||
+                !mSuspect.equals(otherCrime.getSuspect()) ||
+                !mSuspectNum.equals(otherCrime.getSuspectNum()) ||
+                !mDate.equals(otherCrime.getDate())) {
+            return false;
+        }
+        return true;
     }
 }

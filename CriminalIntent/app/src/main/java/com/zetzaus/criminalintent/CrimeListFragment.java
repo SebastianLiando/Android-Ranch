@@ -10,15 +10,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -120,12 +119,13 @@ public class CrimeListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mViewModel.getLiveDataCrimes().observe(getViewLifecycleOwner(), new Observer<List<Crime>>() {
-            @Override
-            public void onChanged(List<Crime> crimes) {
-                mCrimeAdapter.setCrimes(crimes);
-            }
-        });
+//        TODO: live data
+//        mViewModel.getLiveDataCrimes().observe(getViewLifecycleOwner(), new Observer<List<Crime>>() {
+//            @Override
+//            public void onChanged(List<Crime> crimes) {
+//                mCrimeAdapter.setCrimes(crimes);
+//            }
+//        });
     }
 
     /**
@@ -215,13 +215,13 @@ public class CrimeListFragment extends Fragment {
      */
     public void updateAdapter() {
         if (mCrimeAdapter == null) {
-            mCrimeAdapter = new CrimeAdapter(mCrimeLab.getCrimes());
+            mCrimeAdapter = new CrimeAdapter();
             mCrimeAdapter.setCallback(mCallback);
             mRecyclerViewCrime.setAdapter(mCrimeAdapter);
-        } else {
-            mCrimeAdapter.setCrimes(mCrimeLab.getCrimes());
-            mCrimeAdapter.notifyDataSetChanged();
         }
+
+        mCrimeAdapter.submitList(mCrimeLab.getCrimes());
+
     }
 
     /**
