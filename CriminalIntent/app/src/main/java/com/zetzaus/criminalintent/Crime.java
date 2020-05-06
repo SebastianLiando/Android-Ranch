@@ -1,22 +1,38 @@
 package com.zetzaus.criminalintent;
 
+import com.zetzaus.criminalintent.database.CrimeDbSchema;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 
+import androidx.room.ColumnInfo;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
 /**
  * This class is an entity class that holds information of a crime.
  */
+@Entity(tableName = CrimeDbSchema.CrimeTable.NAME)
 public class Crime {
 
+    @PrimaryKey
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.UUID)
     private UUID mId;
+
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.TITLE)
     private String mTitle;
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.SUSPECT)
     private String mSuspect;
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.PHONE)
     private String mSuspectNum;
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.DATE)
     private Date mDate;
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.SOLVED)
     private boolean mSolved;
+    @ColumnInfo(name = CrimeDbSchema.CrimeTable.CrimeColumn.REQUIRES_POLICE)
     private boolean mRequiresPolice;
 
     /**

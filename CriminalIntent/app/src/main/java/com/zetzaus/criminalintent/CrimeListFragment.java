@@ -10,12 +10,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -32,6 +35,7 @@ public class CrimeListFragment extends Fragment {
 
     private CrimeAdapter mCrimeAdapter;
     private CrimeLab mCrimeLab;
+    private CrimeListViewModel mViewModel;
 
     private boolean mSubtitleShown = false;
     private Callback mCallback;
@@ -64,6 +68,8 @@ public class CrimeListFragment extends Fragment {
         if (savedInstanceState != null) {
             mSubtitleShown = savedInstanceState.getBoolean(SUBTITLE_SHOWN_KEY);
         }
+
+        mViewModel = new ViewModelProvider(this).get(CrimeListViewModel.class);
     }
 
     /**
@@ -109,6 +115,17 @@ public class CrimeListFragment extends Fragment {
         touchHelper.attachToRecyclerView(mRecyclerViewCrime);
 
         return parent;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        mViewModel.getLiveDataCrimes().observe(getViewLifecycleOwner(), new Observer<List<Crime>>() {
+            @Override
+            public void onChanged(List<Crime> crimes) {
+                mCrimeAdapter.setCrimes(crimes);
+            }
+        });
     }
 
     /**
