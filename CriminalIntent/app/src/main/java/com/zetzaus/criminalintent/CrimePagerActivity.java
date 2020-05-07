@@ -55,7 +55,7 @@ public class CrimePagerActivity extends AppCompatActivity implements CrimeFragme
             @Override
             public void onChanged(List<Crime> crimes) {
                 mCrimes = crimes;
-                Log.i("CrimePagerActivity", crimes.size() + "");
+
                 // Setup view pager
                 if (mCrimePager.getAdapter() == null) {
                     mCrimePager.setAdapter(new FragmentStateAdapter(CrimePagerActivity.this) {

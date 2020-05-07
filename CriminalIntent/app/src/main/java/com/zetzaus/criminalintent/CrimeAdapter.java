@@ -1,15 +1,13 @@
 package com.zetzaus.criminalintent;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.util.List;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,18 +23,19 @@ public class CrimeAdapter extends ListAdapter<Crime, CrimeAdapter.ViewHolder> {
     private static final int TYPE_NORMAL = 0;
     private static final int TYPE_SERIOUS = 1;
 
-    private List<Crime> mCrimes;
     private CrimeListFragment.Callback mCallback;
 
     public CrimeAdapter() {
         super(new DiffUtil.ItemCallback<Crime>() {
             @Override
             public boolean areItemsTheSame(@NonNull Crime oldItem, @NonNull Crime newItem) {
-                return oldItem.getId() == newItem.getId();
+                Log.i("CrimeAdapter", "Same item? " + oldItem.getId().equals(newItem.getId()));
+                return oldItem.getId().equals(newItem.getId());
             }
 
             @Override
             public boolean areContentsTheSame(@NonNull Crime oldItem, @NonNull Crime newItem) {
+                Log.i("CrimeAdapter", "Same content? " + oldItem.equals(newItem));
                 return oldItem.equals(newItem);
             }
         });
@@ -67,14 +66,8 @@ public class CrimeAdapter extends ListAdapter<Crime, CrimeAdapter.ViewHolder> {
      */
     @Override
     public void onBindViewHolder(@NonNull CrimeAdapter.ViewHolder holder, int position) {
-        Crime crimeToBind = mCrimes.get(position);
+        Crime crimeToBind = getCurrentList().get(position);
         holder.bind(crimeToBind);
-    }
-
-    @Override
-    public void submitList(@Nullable List<Crime> list) {
-        super.submitList(list);
-        mCrimes = list;
     }
 
     /**
@@ -85,7 +78,7 @@ public class CrimeAdapter extends ListAdapter<Crime, CrimeAdapter.ViewHolder> {
      */
     @Override
     public int getItemViewType(int position) {
-        Crime crime = mCrimes.get(position);
+        Crime crime = getCurrentList().get(position);
 
         if (crime.isSolved()) return TYPE_NORMAL;
         if (crime.isRequiresPolice()) return TYPE_SERIOUS;

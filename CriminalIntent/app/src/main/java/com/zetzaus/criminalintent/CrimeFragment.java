@@ -175,9 +175,6 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-        //Accessibility purpose for date
-//        mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
-
         // Setup time button
         mTimeButton = parent.findViewById(R.id.button_crime_time);
         mTimeButton.setOnClickListener(new View.OnClickListener() {
@@ -248,15 +245,6 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-        // Accessibility purpose
-//        String suspect = getString(R.string.crime_report_no_suspect);
-//        if (mCrime.getSuspect() != null) {
-//            suspect = getString(R.string.crime_report_suspect, mCrime.getSuspect());
-//            mSuspectButton.setText(mCrime.getSuspect());
-//        }
-
-//        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, suspect));
-
         mCallButton = parent.findViewById(R.id.image_button_call);
         mCallButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -299,24 +287,12 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-//        updatePhoto();
-
         return parent;
-    }
-
-    /**
-     * Saves crime details to the database when the activity enters pause mode.
-     */
-    @Override
-    public void onPause() {
-        super.onPause();
-//        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        Log.i("CrimeFragment", "onStopCalled");
         updateCrime();
     }
 
@@ -376,7 +352,6 @@ public class CrimeFragment extends Fragment {
             getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
             // UI update
-//            updatePhoto();
             updateCrime();
 
             // Accessibility purpose
@@ -550,6 +525,8 @@ public class CrimeFragment extends Fragment {
      * To be called by live data observe.
      */
     private void updateUI() {
+        if (mCrime == null) return;
+
         mEditTextTitle.setText(mCrime.getTitle());
         updateDateTime();
         mCheckBoxPolice.setChecked(mCrime.isRequiresPolice());

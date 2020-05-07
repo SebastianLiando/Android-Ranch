@@ -6,6 +6,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
@@ -212,16 +213,24 @@ public class Crime {
 
     @Override
     public boolean equals(@Nullable Object obj) {
+
+        if (obj == this) return true;
+        if (!(obj instanceof Crime)) return false;
+
         Crime otherCrime = (Crime) obj;
-        if (!mId.equals(otherCrime.getId()) ||
-                !mTitle.equals(otherCrime.getTitle()) ||
-                mSolved != otherCrime.isSolved() ||
-                mRequiresPolice != otherCrime.isRequiresPolice() ||
-                !mSuspect.equals(otherCrime.getSuspect()) ||
-                !mSuspectNum.equals(otherCrime.getSuspectNum()) ||
-                !mDate.equals(otherCrime.getDate())) {
+
+        if ((getTitle() == null && otherCrime.getTitle() != null) ||
+                (getSuspect() == null && otherCrime.getSuspect() != null) ||
+                (getSuspectNum() == null && otherCrime.getSuspectNum() != null)) {
             return false;
         }
-        return true;
+
+        return getId().equals(otherCrime.getId()) &&
+                Objects.equals(getTitle(), otherCrime.getTitle()) &&
+                isSolved() == otherCrime.isSolved() &&
+                isRequiresPolice() == otherCrime.isRequiresPolice() &&
+                Objects.equals(getSuspect(), otherCrime.getSuspect()) &&
+                Objects.equals(getSuspectNum(), otherCrime.getSuspectNum()) &&
+                getDate().equals(otherCrime.getDate());
     }
 }

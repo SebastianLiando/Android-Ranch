@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.List;
-import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,10 +35,8 @@ public class CrimeListFragment extends Fragment {
     private TextView mTextViewNoCrime;
 
     private CrimeAdapter mCrimeAdapter;
-    //    private CrimeLab mCrimeLab;
     private CrimeListViewModel mViewModel;
 
-    //    private boolean mSubtitleShown = false;
     private Callback mCallback;
 
     /**
@@ -47,8 +44,6 @@ public class CrimeListFragment extends Fragment {
      */
     public interface Callback {
         void onCrimeSelected(Crime crime);
-
-        void onSwipeRemove(UUID id);
     }
 
     /**
@@ -89,14 +84,16 @@ public class CrimeListFragment extends Fragment {
         // Inflate the layout for this fragment
         View parent = inflater.inflate(R.layout.fragment_crime_list, container, false);
 
-//        mCrimeLab = CrimeLab.getInstance(getActivity());
         mTextViewNoCrime = parent.findViewById(R.id.text_no_crime);
 
         // Setup RecyclerView
         mRecyclerViewCrime = parent.findViewById(R.id.recycler_view_crimes);
         mRecyclerViewCrime.setLayoutManager(new LinearLayoutManager(getActivity()));
-        mCrimeAdapter = new CrimeAdapter();
-        mCrimeAdapter.setCallback((CrimeListActivity) getActivity());
+        if (mCrimeAdapter == null) {
+            Log.i("CrimeListFragment", "Create a new crime adapter");
+            mCrimeAdapter = new CrimeAdapter();
+            mCrimeAdapter.setCallback((CrimeListActivity) getActivity());
+        }
         mRecyclerViewCrime.setAdapter(mCrimeAdapter);
 
         // Setup Swipe
@@ -109,12 +106,6 @@ public class CrimeListFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 mViewModel.deleteCrime(((CrimeAdapter.ViewHolder) viewHolder).getCrime());
-//                CrimeLab lab = CrimeLab.getInstance(getActivity());
-//                Crime crime = lab.getCrimeAtPos(viewHolder.getBindingAdapterPosition());
-                // Delete and process view
-//                mCallback.onSwipeRemove(crime.getId());
-//                lab.deleteCrime(crime.getId());
-//                updateAdapter();
             }
         });
         touchHelper.attachToRecyclerView(mRecyclerViewCrime);
@@ -133,10 +124,10 @@ public class CrimeListFragment extends Fragment {
                 if (crimes.size() == 0) {
                     mTextViewNoCrime.setVisibility(View.VISIBLE);
                 } else {
-                    mCrimeAdapter.submitList(crimes);
                     mTextViewNoCrime.setVisibility(View.GONE);
                 }
 
+                mCrimeAdapter.submitList(crimes);
                 mViewModel.setCrimeCount(crimes.size());
             }
         });
@@ -174,8 +165,6 @@ public class CrimeListFragment extends Fragment {
             case R.id.action_add_crime:
                 Crime crime = new Crime();
                 mViewModel.addCrime(crime);
-//                CrimeLab.getInstance(getActivity()).addCrime(crime);
-//                updateAdapter();
                 mCallback.onCrimeSelected(crime);
                 return true;
             case R.id.action_show_subtitle:
@@ -186,23 +175,6 @@ public class CrimeListFragment extends Fragment {
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    /**
-     * Update the list when the user goes back from <code>CrimeFragment</code>.
-     */
-    @Override
-    public void onResume() {
-        super.onResume();
-//        updateAdapter();
-//        updateSubtitle();
-
-        // Setup text if no crime
-//        if (mCrimeLab.getCrimes().size() == 0) {
-//            mTextViewNoCrime.setVisibility(View.VISIBLE);
-//        } else {
-//            mTextViewNoCrime.setVisibility(View.GONE);
-//        }
     }
 
     /**

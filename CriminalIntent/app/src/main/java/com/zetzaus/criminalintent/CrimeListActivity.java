@@ -6,8 +6,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import java.util.UUID;
-
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -91,22 +89,7 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
         } else {
             Intent intent = CrimePagerActivity.newIntent(this, crime.getId());
             startActivity(intent);
-        }
-    }
-
-    /**
-     * Close the details fragment if the swiped item is the current crime.
-     *
-     * @param id the id of the crime.
-     * @deprecated
-     */
-    @Override
-    public void onSwipeRemove(UUID id) {
-        CrimeFragment fragment = (CrimeFragment) getSupportFragmentManager().findFragmentById(R.id.frame_container_detail);
-        if (fragment.getCrime().getId().equals(id)) {
-            getSupportFragmentManager().beginTransaction()
-                    .remove(fragment)
-                    .commit();
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         }
     }
 
@@ -130,6 +113,6 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
         getSupportFragmentManager().beginTransaction()
                 .remove(getSupportFragmentManager().findFragmentById(R.id.frame_container_detail))
                 .commit();
-        onCrimeUpdated(null);
+//        onCrimeUpdated(null);
     }
 }
