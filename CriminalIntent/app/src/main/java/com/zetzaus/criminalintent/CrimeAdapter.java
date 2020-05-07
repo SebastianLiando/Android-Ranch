@@ -163,5 +163,9 @@ public class CrimeAdapter extends ListAdapter<Crime, CrimeAdapter.ViewHolder> {
         public void onClick(View v) {
             if (mCallback != null) mCallback.onCrimeSelected(mCrime);
         }
+
+        public Crime getCrime() {
+            return mCrime;
+        }
     }
 }

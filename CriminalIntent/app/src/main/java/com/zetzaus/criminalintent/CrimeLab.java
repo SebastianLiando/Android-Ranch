@@ -15,6 +15,7 @@ import java.util.UUID;
 
 /**
  * This class is a singleton class that holds the list of crimes.
+ * @deprecated
  */
 public class CrimeLab {
 

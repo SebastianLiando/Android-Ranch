@@ -14,6 +14,8 @@ public class CrimeListViewModel extends AndroidViewModel {
 
     private CrimeRepository mRepository;
     private LiveData<List<Crime>> mLiveDataCrimes;
+    private int mCrimeCount;
+    private boolean mSubtitleShown;
 
     public CrimeListViewModel(@NonNull Application application) {
         super(application);
@@ -23,5 +25,29 @@ public class CrimeListViewModel extends AndroidViewModel {
 
     public LiveData<List<Crime>> getLiveDataCrimes() {
         return mLiveDataCrimes;
+    }
+
+    public void deleteCrime(Crime crime) {
+        mRepository.deleteCrime(crime);
+    }
+
+    public void addCrime(Crime crime){
+        mRepository.addCrime(crime);
+    }
+
+    public void setCrimeCount(int crimeCount) {
+        this.mCrimeCount = crimeCount;
+    }
+
+    public int getCrimeCount() {
+        return mCrimeCount;
+    }
+
+    public void setSubtitleShown(boolean subtitleShown) {
+        mSubtitleShown = subtitleShown;
+    }
+
+    public boolean isSubtitleShown() {
+        return mSubtitleShown;
     }
 }

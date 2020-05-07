@@ -98,6 +98,7 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
      * Close the details fragment if the swiped item is the current crime.
      *
      * @param id the id of the crime.
+     * @deprecated
      */
     @Override
     public void onSwipeRemove(UUID id) {
@@ -113,6 +114,7 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
      * Handles updating UI when the crime is updated.
      *
      * @param crime the updated crime.
+     * @deprecated
      */
     @Override
     public void onCrimeUpdated(Crime crime) {

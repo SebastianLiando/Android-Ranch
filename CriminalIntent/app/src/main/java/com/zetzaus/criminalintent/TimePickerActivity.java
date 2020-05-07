@@ -3,9 +3,12 @@ package com.zetzaus.criminalintent;
 import android.content.Context;
 import android.content.Intent;
 
+import java.util.Date;
 import java.util.UUID;
 
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 
 /**
  * This activity holds <code>TimePickerFragment</code>.
@@ -14,18 +17,18 @@ public class TimePickerActivity extends SingleFragmentActivity {
 
     private static final String EXTRA_UUID = BuildConfig.APPLICATION_ID + "EXTRA_UUID";
 
-    private Crime mCrime;
+    private Date mDate;
 
     /**
      * Returns a new intent pointing to <code>TimePickerActivity</code>.
      *
      * @param context the context.
-     * @param crimeId the crime id.
+     * @param date the crime date.
      * @return a new intent pointing to <code>TimePickerActivity</code>.
      */
-    public static Intent newIntent(Context context, UUID crimeId) {
+    public static Intent newIntent(Context context, Date date) {
         Intent intent = new Intent(context, TimePickerActivity.class);
-        intent.putExtra(EXTRA_UUID, crimeId);
+        intent.putExtra(EXTRA_UUID, date);
         return intent;
     }
 
@@ -37,9 +40,8 @@ public class TimePickerActivity extends SingleFragmentActivity {
     @Override
     protected Fragment createFragment() {
         // Retrieve crime
-        UUID crimeId = (UUID) getIntent().getSerializableExtra(EXTRA_UUID);
-        mCrime = CrimeLab.getInstance(this).getCrime(crimeId);
+        mDate = (Date) getIntent().getSerializableExtra(EXTRA_UUID);
         // Launch
-        return TimePickerFragment.newInstance(mCrime.getDate());
+        return TimePickerFragment.newInstance(mDate);
     }
 }

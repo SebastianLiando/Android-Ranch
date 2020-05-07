@@ -2,6 +2,7 @@ package com.zetzaus.criminalintent;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -10,14 +11,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -28,15 +30,16 @@ import androidx.recyclerview.widget.RecyclerView;
 public class CrimeListFragment extends Fragment {
 
     private static final String SUBTITLE_SHOWN_KEY = "Subtitle_shown_key";
+    private static final String CRIME_COUNT_KEY = "Crime_count_key";
 
     private RecyclerView mRecyclerViewCrime;
     private TextView mTextViewNoCrime;
 
     private CrimeAdapter mCrimeAdapter;
-    private CrimeLab mCrimeLab;
+    //    private CrimeLab mCrimeLab;
     private CrimeListViewModel mViewModel;
 
-    private boolean mSubtitleShown = false;
+    //    private boolean mSubtitleShown = false;
     private Callback mCallback;
 
     /**
@@ -64,11 +67,12 @@ public class CrimeListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        if (savedInstanceState != null) {
-            mSubtitleShown = savedInstanceState.getBoolean(SUBTITLE_SHOWN_KEY);
-        }
-
         mViewModel = new ViewModelProvider(this).get(CrimeListViewModel.class);
+
+        if (savedInstanceState != null) {
+            mViewModel.setSubtitleShown(savedInstanceState.getBoolean(SUBTITLE_SHOWN_KEY));
+            mViewModel.setCrimeCount(savedInstanceState.getInt(CRIME_COUNT_KEY, 0));
+        }
     }
 
     /**
@@ -85,13 +89,15 @@ public class CrimeListFragment extends Fragment {
         // Inflate the layout for this fragment
         View parent = inflater.inflate(R.layout.fragment_crime_list, container, false);
 
-        mCrimeLab = CrimeLab.getInstance(getActivity());
+//        mCrimeLab = CrimeLab.getInstance(getActivity());
         mTextViewNoCrime = parent.findViewById(R.id.text_no_crime);
 
         // Setup RecyclerView
         mRecyclerViewCrime = parent.findViewById(R.id.recycler_view_crimes);
         mRecyclerViewCrime.setLayoutManager(new LinearLayoutManager(getActivity()));
-        updateAdapter();
+        mCrimeAdapter = new CrimeAdapter();
+        mCrimeAdapter.setCallback((CrimeListActivity) getActivity());
+        mRecyclerViewCrime.setAdapter(mCrimeAdapter);
 
         // Setup Swipe
         ItemTouchHelper touchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -102,13 +108,13 @@ public class CrimeListFragment extends Fragment {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // Get the crime to remove
-                CrimeLab lab = CrimeLab.getInstance(getActivity());
-                Crime crime = lab.getCrimeAtPos(viewHolder.getBindingAdapterPosition());
+                mViewModel.deleteCrime(((CrimeAdapter.ViewHolder) viewHolder).getCrime());
+//                CrimeLab lab = CrimeLab.getInstance(getActivity());
+//                Crime crime = lab.getCrimeAtPos(viewHolder.getBindingAdapterPosition());
                 // Delete and process view
-                mCallback.onSwipeRemove(crime.getId());
-                lab.deleteCrime(crime.getId());
-                updateAdapter();
+//                mCallback.onSwipeRemove(crime.getId());
+//                lab.deleteCrime(crime.getId());
+//                updateAdapter();
             }
         });
         touchHelper.attachToRecyclerView(mRecyclerViewCrime);
@@ -119,13 +125,21 @@ public class CrimeListFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-//        TODO: live data
-//        mViewModel.getLiveDataCrimes().observe(getViewLifecycleOwner(), new Observer<List<Crime>>() {
-//            @Override
-//            public void onChanged(List<Crime> crimes) {
-//                mCrimeAdapter.setCrimes(crimes);
-//            }
-//        });
+        mViewModel.getLiveDataCrimes().observe(getViewLifecycleOwner(), new Observer<List<Crime>>() {
+            @Override
+            public void onChanged(List<Crime> crimes) {
+                Log.i("CrimeListFragment", crimes.size() + "");
+
+                if (crimes.size() == 0) {
+                    mTextViewNoCrime.setVisibility(View.VISIBLE);
+                } else {
+                    mCrimeAdapter.submitList(crimes);
+                    mTextViewNoCrime.setVisibility(View.GONE);
+                }
+
+                mViewModel.setCrimeCount(crimes.size());
+            }
+        });
     }
 
     /**
@@ -141,7 +155,7 @@ public class CrimeListFragment extends Fragment {
 
         // Set the subtitle title
         MenuItem item = menu.findItem(R.id.action_show_subtitle);
-        if (mSubtitleShown) {
+        if (mViewModel.isSubtitleShown()) {
             item.setTitle(R.string.subtitle_hide);
         } else {
             item.setTitle(R.string.subtitle_show);
@@ -159,12 +173,13 @@ public class CrimeListFragment extends Fragment {
         switch (item.getItemId()) {
             case R.id.action_add_crime:
                 Crime crime = new Crime();
-                CrimeLab.getInstance(getActivity()).addCrime(crime);
-                updateAdapter();
+                mViewModel.addCrime(crime);
+//                CrimeLab.getInstance(getActivity()).addCrime(crime);
+//                updateAdapter();
                 mCallback.onCrimeSelected(crime);
                 return true;
             case R.id.action_show_subtitle:
-                mSubtitleShown = !mSubtitleShown;
+                mViewModel.setSubtitleShown(!mViewModel.isSubtitleShown());
                 getActivity().invalidateOptionsMenu();
                 updateSubtitle();
                 return true;
@@ -179,15 +194,15 @@ public class CrimeListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        updateAdapter();
-        updateSubtitle();
+//        updateAdapter();
+//        updateSubtitle();
 
         // Setup text if no crime
-        if (mCrimeLab.getCrimes().size() == 0) {
-            mTextViewNoCrime.setVisibility(View.VISIBLE);
-        } else {
-            mTextViewNoCrime.setVisibility(View.GONE);
-        }
+//        if (mCrimeLab.getCrimes().size() == 0) {
+//            mTextViewNoCrime.setVisibility(View.VISIBLE);
+//        } else {
+//            mTextViewNoCrime.setVisibility(View.GONE);
+//        }
     }
 
     /**
@@ -198,7 +213,8 @@ public class CrimeListFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putBoolean(SUBTITLE_SHOWN_KEY, mSubtitleShown);
+        outState.putBoolean(SUBTITLE_SHOWN_KEY, mViewModel.isSubtitleShown());
+        outState.putInt(CRIME_COUNT_KEY, mViewModel.getCrimeCount());
     }
 
     /**
@@ -212,6 +228,8 @@ public class CrimeListFragment extends Fragment {
 
     /**
      * Attaches a <code>CrimeAdapter</code> to the <code>RecyclerView</code>.
+     *
+     * @deprecated
      */
     public void updateAdapter() {
         if (mCrimeAdapter == null) {
@@ -220,7 +238,7 @@ public class CrimeListFragment extends Fragment {
             mRecyclerViewCrime.setAdapter(mCrimeAdapter);
         }
 
-        mCrimeAdapter.submitList(mCrimeLab.getCrimes());
+//        mCrimeAdapter.submitList(mCrimeLab.getCrimes());
 
     }
 
@@ -228,10 +246,10 @@ public class CrimeListFragment extends Fragment {
      * Updates the subtitle. This may disable or enable the subtitle.
      */
     private void updateSubtitle() {
-        int count = CrimeLab.getInstance(getActivity()).getCrimes().size();
+        int count = mViewModel.getCrimeCount();
         String subtitle = getResources().getQuantityString(R.plurals.format_subtitle, count, count);
 
-        if (!mSubtitleShown) subtitle = null;
+        if (!mViewModel.isSubtitleShown()) subtitle = null;
 
         AppCompatActivity host = (AppCompatActivity) getActivity();
         host.getSupportActionBar().setSubtitle(subtitle);

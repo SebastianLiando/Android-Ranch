@@ -10,6 +10,7 @@ import java.util.UUID;
 
 /**
  * This class is a custom <code>CursorWrapper</code> to encapsulate crime creation process.
+ * @deprecated use room implementation.
  */
 public class CrimeCursorWrapper extends CursorWrapper {
     /**

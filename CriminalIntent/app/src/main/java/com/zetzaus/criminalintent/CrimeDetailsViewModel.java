@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.zetzaus.criminalintent.database.CrimeRepository;
 
+import java.io.File;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
@@ -16,7 +17,7 @@ import androidx.lifecycle.Transformations;
 public class CrimeDetailsViewModel extends AndroidViewModel {
 
     private CrimeRepository mRepository;
-    private MutableLiveData<UUID> mUUIDMutableLiveData;
+    private MutableLiveData<UUID> mUUIDMutableLiveData = new MutableLiveData<>();
     private LiveData<Crime> mCrimeLiveData = Transformations.switchMap(mUUIDMutableLiveData,
             new Function<UUID, LiveData<Crime>>() {
                 @Override
@@ -38,7 +39,16 @@ public class CrimeDetailsViewModel extends AndroidViewModel {
         mRepository.updateCrime(crime);
     }
 
+    public void deleteCrime(Crime crime){
+        mRepository.deleteCrime(crime);
+    }
+
     public LiveData<Crime> getCrimeLiveData() {
         return mCrimeLiveData;
     }
+
+    public File getCrimePhotoFile(Crime crime) {
+        return mRepository.getPhotoFile(crime);
+    }
+
 }

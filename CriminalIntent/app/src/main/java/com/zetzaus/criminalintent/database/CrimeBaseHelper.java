@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 /**
  * This class is a custom <code>SQLiteOpenHelper</code> for the crime's database.
+ * @deprecated use room implementation.
  */
 public class CrimeBaseHelper extends SQLiteOpenHelper {
     private static final int VERSION = 1;

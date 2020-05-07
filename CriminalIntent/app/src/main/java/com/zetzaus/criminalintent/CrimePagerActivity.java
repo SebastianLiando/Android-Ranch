@@ -3,6 +3,7 @@ package com.zetzaus.criminalintent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -12,6 +13,8 @@ import java.util.UUID;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -29,6 +32,7 @@ public class CrimePagerActivity extends AppCompatActivity implements CrimeFragme
     private Button mButtonLast;
 
     private List<Crime> mCrimes;
+    private CrimeListViewModel mViewModel;
 
     /**
      * Sets up the activity to display the pager.
@@ -45,49 +49,61 @@ public class CrimePagerActivity extends AppCompatActivity implements CrimeFragme
         mButtonLast = findViewById(R.id.button_last);
         mButtonFirst = findViewById(R.id.button_first);
 
-        mCrimes = CrimeLab.getInstance(this).getCrimes();
-
-        // Setup view pager
-        mCrimePager.setAdapter(new FragmentStateAdapter(this) {
+        // Setup view model
+        mViewModel = new ViewModelProvider(this).get(CrimeListViewModel.class);
+        mViewModel.getLiveDataCrimes().observe(this, new Observer<List<Crime>>() {
             @Override
-            public int getItemCount() {
-                return mCrimes.size();
-            }
+            public void onChanged(List<Crime> crimes) {
+                mCrimes = crimes;
+                Log.i("CrimePagerActivity", crimes.size() + "");
+                // Setup view pager
+                if (mCrimePager.getAdapter() == null) {
+                    mCrimePager.setAdapter(new FragmentStateAdapter(CrimePagerActivity.this) {
+                        @Override
+                        public int getItemCount() {
+                            return mCrimes.size();
+                        }
 
-            @NonNull
-            @Override
-            public Fragment createFragment(int position) {
-                Crime crime = mCrimes.get(position);
-                return CrimeFragment.newInstance(crime.getId());
+                        @NonNull
+                        @Override
+                        public Fragment createFragment(int position) {
+                            Crime crime = mCrimes.get(position);
+                            Log.i("CrimePagerActivity", crime.getId() + "");
+                            return CrimeFragment.newInstance(crime.getId());
+                        }
+                    });
+
+                    callback = new ViewPager2.OnPageChangeCallback() {
+                        @Override
+                        public void onPageSelected(int position) {
+                            super.onPageSelected(position);
+                            mButtonFirst.setEnabled(true);
+                            mButtonLast.setEnabled(true);
+
+                            if (position == 0) {
+                                mButtonFirst.setEnabled(false);
+                            }
+
+                            if (position == mCrimes.size() - 1) {
+                                mButtonLast.setEnabled(false);
+                            }
+                        }
+                    };
+                    mCrimePager.registerOnPageChangeCallback(callback);
+
+                    // Set starting page
+                    UUID id = (UUID) getIntent().getSerializableExtra(EXTRA_UUID);
+                    for (int i = 0; i < mCrimes.size(); i++) {
+                        if (id.equals(mCrimes.get(i).getId())) {
+                            mCrimePager.setCurrentItem(i);
+                            break;
+                        }
+                    }
+                }
             }
         });
 
-        callback = new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                mButtonFirst.setEnabled(true);
-                mButtonLast.setEnabled(true);
-
-                if (position == 0) {
-                    mButtonFirst.setEnabled(false);
-                }
-
-                if (position == mCrimes.size() - 1) {
-                    mButtonLast.setEnabled(false);
-                }
-            }
-        };
-        mCrimePager.registerOnPageChangeCallback(callback);
-
-        // Set starting page
-        UUID id = (UUID) getIntent().getSerializableExtra(EXTRA_UUID);
-        for (int i = 0; i < mCrimes.size(); i++) {
-            if (id.equals(mCrimes.get(i).getId())) {
-                mCrimePager.setCurrentItem(i);
-                break;
-            }
-        }
+//        mCrimes = CrimeLab.getInstance(this).getCrimes();
 
         // Setup jump to first button
         mButtonFirst.setOnClickListener(new View.OnClickListener() {

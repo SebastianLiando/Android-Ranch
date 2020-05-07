@@ -13,6 +13,7 @@ import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -42,6 +43,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 /**
@@ -114,12 +116,8 @@ public class CrimeFragment extends Fragment {
         super.onCreate(savedInstanceState);
         // Get crime
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_UUID);
-        mCrime = CrimeLab.getInstance(getActivity()).getCrime(crimeId);
-        mPhoto = CrimeLab.getInstance(getActivity()).getCrimePhoto(mCrime);
-
         mViewModel = new ViewModelProvider(this).get(CrimeDetailsViewModel.class);
-//        TODO: live data
-//        mViewModel.loadCrime(crimeId);
+        mViewModel.loadCrime(crimeId);
 
         // Tell about menu
         setHasOptionsMenu(true);
@@ -141,7 +139,6 @@ public class CrimeFragment extends Fragment {
 
         // Setup edit text
         mEditTextTitle = parent.findViewById(R.id.edit_text_title);
-        mEditTextTitle.setText(mCrime.getTitle());
         mEditTextTitle.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -150,8 +147,9 @@ public class CrimeFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                mCrime.setTitle(s.toString());
-                updateCrime();
+                if (mCrime != null) {
+                    mCrime.setTitle(s.toString());
+                }
             }
 
             @Override
@@ -166,19 +164,19 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (getResources().getBoolean(R.bool.isTablet)) {
-                    FragmentManager manager = getFragmentManager();
+                    FragmentManager manager = getParentFragmentManager();
                     PickerFragment fragment = DatePickerFragment.newInstance(mCrime.getDate());
                     fragment.setTargetFragment(CrimeFragment.this, REQUEST_DATE);
                     fragment.show(manager, TAG_DATE_PICKER);
                 } else {
-                    Intent intent = DatePickerActivity.newIntent(getActivity(), mCrime.getId());
+                    Intent intent = DatePickerActivity.newIntent(getActivity(), mCrime.getDate());
                     startActivityForResult(intent, REQUEST_DATE);
                 }
             }
         });
 
         //Accessibility purpose for date
-        mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
+//        mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
 
         // Setup time button
         mTimeButton = parent.findViewById(R.id.button_crime_time);
@@ -186,41 +184,33 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (getResources().getBoolean(R.bool.isTablet)) {
-                    FragmentManager manager = getFragmentManager();
+                    FragmentManager manager = getParentFragmentManager();
                     PickerFragment fragment = TimePickerFragment.newInstance(mCrime.getDate());
                     fragment.setTargetFragment(CrimeFragment.this, REQUEST_TIME);
                     fragment.show(manager, TAG_TIME_PICKER);
                 } else {
-                    Intent intent = TimePickerActivity.newIntent(getActivity(), mCrime.getId());
+                    Intent intent = TimePickerActivity.newIntent(getActivity(), mCrime.getDate());
                     startActivityForResult(intent, REQUEST_TIME);
                 }
             }
         });
 
-        updateDateTime();
-
-        // Accessibility for time button
-        mTimeButton.setContentDescription(getString(R.string.content_desc_crime_time, mCrime.getTimeString()));
-
         // Setup solved check box
         mCheckBoxSolved = parent.findViewById(R.id.checkbox_crime_solved);
-        mCheckBoxSolved.setChecked(mCrime.isSolved());
+//        mCheckBoxSolved.setChecked(mCrime.isSolved());
         mCheckBoxSolved.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mCrime.setSolved(isChecked);
-                updateCrime();
+                if (mCrime != null) mCrime.setSolved(isChecked);
             }
         });
 
         // Setup requires police check box
         mCheckBoxPolice = parent.findViewById(R.id.checkbox_requires_police);
-        mCheckBoxPolice.setChecked(mCrime.isRequiresPolice());
         mCheckBoxPolice.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mCrime.setRequiresPolice(isChecked);
-                updateCrime();
+                if (mCrime != null) mCrime.setRequiresPolice(isChecked);
             }
         });
 
@@ -259,13 +249,13 @@ public class CrimeFragment extends Fragment {
         });
 
         // Accessibility purpose
-        String suspect = getString(R.string.crime_report_no_suspect);
-        if (mCrime.getSuspect() != null) {
-            suspect = getString(R.string.crime_report_suspect, mCrime.getSuspect());
-            mSuspectButton.setText(mCrime.getSuspect());
-        }
+//        String suspect = getString(R.string.crime_report_no_suspect);
+//        if (mCrime.getSuspect() != null) {
+//            suspect = getString(R.string.crime_report_suspect, mCrime.getSuspect());
+//            mSuspectButton.setText(mCrime.getSuspect());
+//        }
 
-        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, suspect));
+//        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, suspect));
 
         mCallButton = parent.findViewById(R.id.image_button_call);
         mCallButton.setOnClickListener(new View.OnClickListener() {
@@ -284,7 +274,7 @@ public class CrimeFragment extends Fragment {
         mCameraButton = parent.findViewById(R.id.image_button_camera);
         final Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        if (mPhoto == null || cameraIntent.resolveActivity(getActivity().getPackageManager()) == null)
+        if (cameraIntent.resolveActivity(getActivity().getPackageManager()) == null)
             mCameraButton.setEnabled(false);
         else mCameraButton.setEnabled(true);
 
@@ -309,7 +299,7 @@ public class CrimeFragment extends Fragment {
             }
         });
 
-        updatePhoto();
+//        updatePhoto();
 
         return parent;
     }
@@ -320,13 +310,14 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
+//        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        mViewModel.saveCrime(mCrime);
+        Log.i("CrimeFragment", "onStopCalled");
+        updateCrime();
     }
 
     /**
@@ -355,7 +346,6 @@ public class CrimeFragment extends Fragment {
 
                 contactQuery.moveToFirst();
                 mCrime.setSuspect(contactQuery.getString(1));
-                mSuspectButton.setText(mCrime.getSuspect());
 
                 // Query phone number
                 String contactId = contactQuery.getString(0);
@@ -386,7 +376,7 @@ public class CrimeFragment extends Fragment {
             getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
             // UI update
-            updatePhoto();
+//            updatePhoto();
             updateCrime();
 
             // Accessibility purpose
@@ -397,7 +387,6 @@ public class CrimeFragment extends Fragment {
                     mImagePhoto.announceForAccessibility(announcement);
                 }
             }, 1000);
-
 
         } else {
             if (data != null) {
@@ -422,7 +411,7 @@ public class CrimeFragment extends Fragment {
                 }
 
                 mCrime.setDate(oldCalendar.getTime());
-                updateDateTime();
+
                 updateCrime();
             }
         }
@@ -431,14 +420,13 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-//         TODO: live data
-//        mViewModel.getCrimeLiveData().observe(getViewLifecycleOwner(), new Observer<Crime>() {
-//            @Override
-//            public void onChanged(Crime crime) {
-//                mCrime = crime;
-//                updateUI();
-//            }
-//        });
+        mViewModel.getCrimeLiveData().observe(getViewLifecycleOwner(), new Observer<Crime>() {
+            @Override
+            public void onChanged(Crime crime) {
+                mCrime = crime;
+                updateUI();
+            }
+        });
     }
 
     /**
@@ -517,6 +505,8 @@ public class CrimeFragment extends Fragment {
      * Updates <code>ImageView</code> for the photo of the crime.
      */
     private void updatePhoto() {
+        mPhoto = mViewModel.getCrimePhotoFile(mCrime);
+
         if (mPhoto == null || !mPhoto.exists()) {
             mImagePhoto.setImageDrawable(null);
             // Not clickable
@@ -533,7 +523,7 @@ public class CrimeFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     PhotoFragment fragment = PhotoFragment.newInstance(mPhoto);
-                    fragment.show(getFragmentManager(), TAG_PHOTO);
+                    fragment.show(getParentFragmentManager(), TAG_PHOTO);
                 }
             });
         }
@@ -543,15 +533,16 @@ public class CrimeFragment extends Fragment {
      * Updates crime and the corresponding list. Used to support tablet implementation.
      */
     private void updateCrime() {
-        CrimeLab.getInstance(getActivity()).updateCrime(mCrime);
-        mCallback.onCrimeUpdated(mCrime);
+        if (mCrime != null) {
+            mViewModel.saveCrime(mCrime);
+        }
     }
 
     /**
      * Removes the crime and invoke the activity's callback.
      */
     private void deleteCrime() {
-        CrimeLab.getInstance(getActivity()).deleteCrime(mCrime.getId());
+        mViewModel.deleteCrime(mCrime);
         mCallback.onCrimeDeleted();
     }
 
@@ -560,15 +551,24 @@ public class CrimeFragment extends Fragment {
      */
     private void updateUI() {
         mEditTextTitle.setText(mCrime.getTitle());
-        mDateButton.setText(mCrime.getDateString());
-        mTimeButton.setText(mCrime.getTimeString());
+        updateDateTime();
         mCheckBoxPolice.setChecked(mCrime.isRequiresPolice());
-        mCheckBoxPolice.setChecked(mCrime.isSolved());
+        mCheckBoxSolved.setChecked(mCrime.isSolved());
+        if (mCrime.getSuspect() != null) {
+            mSuspectButton.setText(mCrime.getSuspect());
+        }
+        updatePhoto();
 
         //Accessibility purposes
         mDateButton.setContentDescription(getString(R.string.content_desc_crime_date, mCrime.getDateString()));
         mTimeButton.setContentDescription(getString(R.string.content_desc_crime_time, mCrime.getTimeString()));
-        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, mCrime.getSuspect()));
+
+        String suspect = getString(R.string.crime_report_no_suspect);
+        if (mCrime.getSuspect() != null) {
+            suspect = getString(R.string.crime_report_suspect, mCrime.getSuspect());
+        }
+
+        mSuspectButton.setContentDescription(getString(R.string.content_desc_crime_suspect, suspect));
     }
 
 }
