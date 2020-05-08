@@ -28,12 +28,14 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.paging.PagedListAdapter;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static android.view.View.GONE;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 
 /**
  * This <code>Fragment</code> displays a grid of images taken from Flickr.
@@ -46,8 +48,11 @@ public class PhotoGalleryFragment extends VisibleFragment {
     private RecyclerView mRecyclerView;
     private ProgressBar mProgressBar;
     private SearchView mSearchView;
-    private PhotoAdapter mPhotoAdapter;
+    private PhotoAdapter mPhotoAdapter = new PhotoAdapter(); //TODO: uncomment
+    private PhotoPagedAdapter mPhotoPagedAdapter;
     private ThumbnailDownloader<PhotoAdapter.ViewHolder> mDownloader;
+
+    private PhotoGalleryViewModel mViewModel;
 
     private List<GalleryItem> mItems = new ArrayList<>();
     private int mPage = 1;
@@ -70,20 +75,19 @@ public class PhotoGalleryFragment extends VisibleFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRetainInstance(true);
+        setRetainInstance(true); //TODO: remove once replaced with LiveData
         setHasOptionsMenu(true);
         updateItems(mPage);
+
+        mViewModel = new ViewModelProvider(this).get(PhotoGalleryViewModel.class);
 
         // Start downloader thread
         Handler handler = new Handler();
         mDownloader = new ThumbnailDownloader<>(handler);
-        mDownloader.setDownloadListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoAdapter.ViewHolder>() {
-            @Override
-            public void onThumbnailDownloaded(PhotoAdapter.ViewHolder target, Bitmap thumbnail) {
-                if (target != null) {
-                    Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
-                    target.bindDrawable(drawable);
-                }
+        mDownloader.setDownloadListener((target, thumbnail) -> {
+            if (target != null) {
+                Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
+                target.bindDrawable(drawable);
             }
         });
         mDownloader.start();
@@ -119,39 +123,39 @@ public class PhotoGalleryFragment extends VisibleFragment {
 
         // Setup RecyclerView
         mRecyclerView = v.findViewById(R.id.recycler_view_photos);
-        setupAdapter();
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (!mRecyclerView.canScrollVertically(1)) {
-                    // Get the next page
-                    updateItems(++mPage);
-                }
-            }
-
-            @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                if (newState == RecyclerView.SCROLL_STATE_SETTLING) {
-                    GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
-                    int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
-                    int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
-                    // Preload previous 10
-                    for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
-                        String url = mItems.get(i).getURL();
-                        if (mDownloader.retrieveCache(url) == null)
-                            mDownloader.queuePreload(url);
-
-                    }
-                    // Preload next 10
-                    for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
-                        String url = mItems.get(i).getURL();
-                        if (mDownloader.retrieveCache(url) == null)
-                            mDownloader.queuePreload(url);
-
-                    }
-                }
-            }
-        });
+//        setupAdapter(); TODO: uncomment
+//        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+//                if (!mRecyclerView.canScrollVertically(1)) {
+//                    // Get the next page
+//                    updateItems(++mPage);
+//                }
+//            }
+//
+//            @Override
+//            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+//                if (newState == RecyclerView.SCROLL_STATE_SETTLING) {
+//                    GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
+//                    int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
+//                    int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
+//                    // Preload previous 10
+//                    for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
+//                        String url = mItems.get(i).getURL();
+//                        if (mDownloader.retrieveCache(url) == null)
+//                            mDownloader.queuePreload(url);
+//
+//                    }
+//                    // Preload next 10
+//                    for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
+//                        String url = mItems.get(i).getURL();
+//                        if (mDownloader.retrieveCache(url) == null)
+//                            mDownloader.queuePreload(url);
+//
+//                    }
+//                }
+//            }
+//        });
         mRecyclerView.getViewTreeObserver()
                 .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
@@ -166,6 +170,21 @@ public class PhotoGalleryFragment extends VisibleFragment {
         mProgressBar = v.findViewById(R.id.progress_bar);
 
         return v;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // TODO: live data
+        mViewModel.getLiveDataGalleryItems().observe(getViewLifecycleOwner(), galleryItems -> {
+//            mItems = galleryItems;
+            if (mPhotoPagedAdapter == null) {
+                mPhotoPagedAdapter = new PhotoPagedAdapter();
+                mRecyclerView.setAdapter(mPhotoPagedAdapter);
+            }
+            mPhotoPagedAdapter.submitList(galleryItems);
+            Log.i(TAG, "Observed a live data with size " + galleryItems.size());
+        });
     }
 
     /**
@@ -260,8 +279,9 @@ public class PhotoGalleryFragment extends VisibleFragment {
         // AsyncTask callbacks may call when the fragment is not attached
         if (isAdded()) {
             if (mRecyclerView.getAdapter() == null) {
-                mPhotoAdapter = new PhotoAdapter(mItems);
+                mPhotoAdapter = new PhotoAdapter();
                 mRecyclerView.setAdapter(mPhotoAdapter);
+                mPhotoAdapter.submitList(mItems);
             }
         }
     }
@@ -281,8 +301,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
      */
     private void resetItems() {
         mItems.clear();
-        mPhotoAdapter = new PhotoAdapter(mItems);
-        mRecyclerView.setAdapter(mPhotoAdapter);
+        mPhotoAdapter.submitList(mItems);
         mPage = 1;
 
         // Enable progress bar
@@ -353,16 +372,20 @@ public class PhotoGalleryFragment extends VisibleFragment {
     /**
      * Custom <code>RecyclerView</code> adapter for displaying images.
      */
-    private class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.ViewHolder> {
-        private List<GalleryItem> mGalleryItems;
+    private class PhotoAdapter extends ListAdapter<GalleryItem, PhotoAdapter.ViewHolder> {
 
-        /**
-         * Create an adapter.
-         *
-         * @param galleryItems the list of items to display.
-         */
-        public PhotoAdapter(List<GalleryItem> galleryItems) {
-            mGalleryItems = galleryItems;
+        public PhotoAdapter() {
+            super(new DiffUtil.ItemCallback<GalleryItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
+                    return oldItem.getId().equals(newItem.getId());
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
+                    return oldItem.equals(newItem);
+                }
+            });
         }
 
         /**
@@ -387,13 +410,14 @@ public class PhotoGalleryFragment extends VisibleFragment {
          */
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            List<GalleryItem> galleryItems = getCurrentList();
             // Display placeholder image
             Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
             holder.bindDrawable(drawable);
 
-            holder.bindGalleryItem(mGalleryItems.get(position));
+            holder.bindGalleryItem(galleryItems.get(position));
 
-            String url = mGalleryItems.get(position).getURL();
+            String url = galleryItems.get(position).getURL();
             Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
 
             if (cacheBitmap != null) {
@@ -401,16 +425,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
             } else {
                 mDownloader.queueThumbnail(holder, url);
             }
-        }
-
-        /**
-         * Returns the number of items to display.
-         *
-         * @return the number of items to display.
-         */
-        @Override
-        public int getItemCount() {
-            return mGalleryItems.size();
         }
 
         /**
@@ -484,6 +498,134 @@ public class PhotoGalleryFragment extends VisibleFragment {
                         mTextView.setVisibility(GONE);
                     }
                 }, 2000);
+                return true;
+            }
+        }
+    }
+
+    private class PhotoPagedAdapter extends PagedListAdapter<GalleryItem, PhotoPagedAdapter.ViewHolder> {
+
+        public PhotoPagedAdapter() {
+            super(new DiffUtil.ItemCallback<GalleryItem>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
+                    return oldItem.getId().equals(newItem.getId());
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
+                    return oldItem.equals(newItem);
+                }
+            });
+        }
+
+        /**
+         * Creates a <code>ViewHolder</code>.
+         *
+         * @param parent   the parent layout.
+         * @param viewType the view type (not used).
+         * @return a <code>ViewHolder</code>.
+         */
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_photo, parent, false);
+            return new ViewHolder(v);
+        }
+
+        /**
+         * Binds the <code>ViewHolder</code> with the data.
+         *
+         * @param holder   the <code>ViewHolder</code>.
+         * @param position the position.
+         */
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            GalleryItem item = getItem(position);
+            // Display placeholder image
+            Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
+            holder.bindDrawable(drawable);
+
+            holder.bindGalleryItem(item);
+
+//            String url = galleryItems.get(position).getURL();
+//            Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
+//
+//            if (cacheBitmap != null) {
+//                holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
+//            } else {
+//                mDownloader.queueThumbnail(holder, url);
+//            }
+        }
+
+        /**
+         * Custom <code>ViewHolder</code>.
+         */
+        private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
+
+            private ImageView mImageView;
+            private TextView mTextView;
+            private GalleryItem mGalleryItem;
+
+            /**
+             * Creates a <code>VewHolder</code>.
+             *
+             * @param itemView the layout.
+             */
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                mImageView = itemView.findViewById(R.id.image_view_photo);
+                mTextView = itemView.findViewById(R.id.text_caption);
+                itemView.setOnClickListener(this);
+                itemView.setOnLongClickListener(this);
+            }
+
+            /**
+             * Sets the image.
+             *
+             * @param drawable the image.
+             */
+            public void bindDrawable(Drawable drawable) {
+                mImageView.setImageDrawable(drawable);
+            }
+
+            /**
+             * Sets the item data.
+             *
+             * @param galleryItem the item data.
+             */
+            public void bindGalleryItem(GalleryItem galleryItem) {
+                mTextView.setVisibility(GONE);
+                mGalleryItem = galleryItem;
+                mImageView.setContentDescription(mGalleryItem.getCaption());
+            }
+
+            /**
+             * Starts <code>PhotoPageActivity</code> when the image is clicked.
+             *
+             * @param v the clicked item.
+             */
+            @Override
+            public void onClick(View v) {
+                Intent webIntent = PhotoPageActivity.newIntent(getActivity(), mGalleryItem.getPhotoPageUri());
+                startActivity(webIntent);
+            }
+
+            /**
+             * Displays caption when the image is held.
+             *
+             * @param v the held item.
+             * @return true (handled).
+             */
+            @Override
+            public boolean onLongClick(View v) {
+                // Display caption and darken
+                mTextView.setVisibility(View.VISIBLE);
+                mTextView.setText(mGalleryItem.getCaption());
+
+                // Disappear after 3 seconds
+                Handler handler = new Handler();
+                handler.postDelayed(() -> mTextView.setVisibility(GONE), 2000);
                 return true;
             }
         }

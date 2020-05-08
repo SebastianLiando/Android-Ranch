@@ -4,6 +4,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.zetzaus.photogallery.api.FlickrApi;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,6 +17,14 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 /**
  * This class handles the networking with Flickr's REST API.
@@ -32,6 +41,7 @@ public class FlickrFetchr {
             .appendQueryParameter("nojsoncallback", "1")
             .appendQueryParameter("extras", "url_s")
             .build();
+
 
     /**
      * Returns a byte array for the data at the url page.

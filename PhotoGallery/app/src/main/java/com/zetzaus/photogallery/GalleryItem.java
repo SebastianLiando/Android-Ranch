@@ -4,7 +4,10 @@ import android.net.Uri;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.Objects;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * This class is a model class for a single image.
@@ -115,5 +118,18 @@ public class GalleryItem {
                 .appendPath(mOwner)
                 .appendPath(mId)
                 .build();
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (obj == this) return true;
+        if (obj == null || !(obj instanceof GalleryItem)) return false;
+
+        GalleryItem otherItem = (GalleryItem) obj;
+
+        return Objects.equals(mCaption, otherItem.mCaption) &&
+                Objects.equals(mId, otherItem.mId) &&
+                Objects.equals(mOwner, otherItem.mOwner) &&
+                Objects.equals(mURL, otherItem.getURL());
     }
 }
