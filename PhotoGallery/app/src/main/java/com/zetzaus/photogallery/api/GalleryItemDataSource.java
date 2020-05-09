@@ -1,9 +1,11 @@
 package com.zetzaus.photogallery.api;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.zetzaus.photogallery.FlickrRepository;
 import com.zetzaus.photogallery.GalleryItem;
+import com.zetzaus.photogallery.QueryPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.paging.PageKeyedDataSource;
@@ -16,12 +18,50 @@ public class GalleryItemDataSource extends PageKeyedDataSource<Integer, GalleryI
     private static final String TAG = GalleryItemDataSource.class.getSimpleName();
 
     private FlickrApi mFlickrApi;
+    private Context mContext;
     private int mMaxPage;
+    String mQuery;
+
+    public GalleryItemDataSource(Context context) {
+        mFlickrApi = FlickrRepository.getFlickrApi();
+        mContext = context.getApplicationContext();
+        mQuery = QueryPreferences.getStoredQuery(mContext);
+    }
 
     @Override
     public void loadInitial(@NonNull LoadInitialParams<Integer> params, @NonNull LoadInitialCallback<Integer, GalleryItem> callback) {
-        mFlickrApi = FlickrRepository.getFlickrApi();
-        mFlickrApi.fetchPhotos(1).enqueue(new Callback<PhotoResponse>() {
+        if (mQuery == null) {
+            loadFirst(mFlickrApi.fetchPhotos(1), callback);
+        } else {
+            loadFirst(mFlickrApi.searchPhotos(mQuery, 1), callback);
+        }
+    }
+
+    @Override
+    public void loadBefore(@NonNull LoadParams<Integer> params, @NonNull LoadCallback<Integer, GalleryItem> callback) {
+        Integer prevPage = params.key == 1 ? null : params.key - 1;
+
+        if (mQuery == null) {
+            loadPrev(prevPage, mFlickrApi.fetchPhotos(params.key), callback);
+        } else {
+            loadPrev(prevPage, mFlickrApi.searchPhotos(mQuery, params.key), callback);
+        }
+    }
+
+    @Override
+    public void loadAfter(@NonNull LoadParams<Integer> params, @NonNull LoadCallback<Integer, GalleryItem> callback) {
+        Integer nextPage = params.key == mMaxPage ? null : params.key + 1;
+
+        if (mQuery == null) {
+            loadNext(nextPage, mFlickrApi.fetchPhotos(params.key), callback);
+        } else {
+            loadNext(nextPage, mFlickrApi.searchPhotos(mQuery, params.key), callback);
+        }
+
+    }
+
+    private void loadFirst(Call<PhotoResponse> responseCall, LoadInitialCallback<Integer, GalleryItem> callback) {
+        responseCall.enqueue(new Callback<PhotoResponse>() {
             @Override
             public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                 Log.d(TAG, "loadInitial onResponse()");
@@ -36,33 +76,20 @@ public class GalleryItemDataSource extends PageKeyedDataSource<Integer, GalleryI
         });
     }
 
-    @Override
-    public void loadBefore(@NonNull LoadParams<Integer> params, @NonNull LoadCallback<Integer, GalleryItem> callback) {
-        Integer prevPage = params.key == 1 ? null : params.key - 1;
-
-        mFlickrApi.fetchPhotos(params.key).enqueue(new Callback<PhotoResponse>() {
-            @Override
-            public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
-                Log.d(TAG, "loadBefore onResponse()");
-                callback.onResult(response.body().getGalleryItems(), prevPage);
-            }
-
-            @Override
-            public void onFailure(Call<PhotoResponse> call, Throwable t) {
-                Log.d(TAG, "loadBefore onFailure()");
-            }
-        });
+    private void loadNext(Integer nextKey, Call<PhotoResponse> responseCall, LoadCallback<Integer, GalleryItem> callback) {
+        load(nextKey, responseCall, callback);
     }
 
-    @Override
-    public void loadAfter(@NonNull LoadParams<Integer> params, @NonNull LoadCallback<Integer, GalleryItem> callback) {
-        Integer nextPage = params.key == mMaxPage ? null : params.key + 1;
+    private void loadPrev(Integer nextKey, Call<PhotoResponse> responseCall, LoadCallback<Integer, GalleryItem> callback) {
+        load(nextKey, responseCall, callback);
+    }
 
-        mFlickrApi.fetchPhotos(params.key).enqueue(new Callback<PhotoResponse>() {
+    private void load(Integer pageToLoad, Call<PhotoResponse> responseCall, LoadCallback<Integer, GalleryItem> callback) {
+        responseCall.enqueue(new Callback<PhotoResponse>() {
             @Override
             public void onResponse(Call<PhotoResponse> call, Response<PhotoResponse> response) {
                 Log.d(TAG, "loadAfter onResponse()");
-                callback.onResult(response.body().getGalleryItems(),nextPage);
+                callback.onResult(response.body().getGalleryItems(), pageToLoad);
             }
 
             @Override
@@ -71,4 +98,5 @@ public class GalleryItemDataSource extends PageKeyedDataSource<Integer, GalleryI
             }
         });
     }
+
 }

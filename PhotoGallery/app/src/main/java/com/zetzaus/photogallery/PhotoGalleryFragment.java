@@ -5,11 +5,9 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -23,16 +21,13 @@ import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.paging.PagedList;
 import androidx.paging.PagedListAdapter;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static android.view.View.GONE;
@@ -48,13 +43,12 @@ public class PhotoGalleryFragment extends VisibleFragment {
     private RecyclerView mRecyclerView;
     private ProgressBar mProgressBar;
     private SearchView mSearchView;
-    private PhotoAdapter mPhotoAdapter = new PhotoAdapter(); //TODO: uncomment
     private PhotoPagedAdapter mPhotoPagedAdapter;
-    private ThumbnailDownloader<PhotoAdapter.ViewHolder> mDownloader;
+    private ThumbnailDownloader<PhotoPagedAdapter.ViewHolder> mDownloader;
 
     private PhotoGalleryViewModel mViewModel;
 
-    private List<GalleryItem> mItems = new ArrayList<>();
+    private PagedList<GalleryItem> mItems;
     private int mPage = 1;
 
     /**
@@ -75,9 +69,8 @@ public class PhotoGalleryFragment extends VisibleFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRetainInstance(true); //TODO: remove once replaced with LiveData
+        setRetainInstance(true);
         setHasOptionsMenu(true);
-        updateItems(mPage);
 
         mViewModel = new ViewModelProvider(this).get(PhotoGalleryViewModel.class);
 
@@ -90,20 +83,13 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 target.bindDrawable(drawable);
             }
         });
-        mDownloader.start();
-        // Block main thread until ready
-        mDownloader.getLooper();
-        Log.i(TAG, "Thumbnail downloader started");
-    }
+        getLifecycle().addObserver(mDownloader.fragmentObserver);
 
-    /**
-     * Clear the Handler's message queue when the <code>View</code> is destroyed.
-     */
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        // Handle rotation
-        mDownloader.clearQueue();
+        getViewLifecycleOwnerLiveData().observe(this, lifecycleOwner -> {
+            if (lifecycleOwner != null) {
+                lifecycleOwner.getLifecycle().addObserver(mDownloader.viewObserver);
+            }
+        });
     }
 
     /**
@@ -112,8 +98,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mDownloader.quit();
-        Log.i(TAG, "Thumbnail downloader stopped");
+        getLifecycle().removeObserver(mDownloader.fragmentObserver);
     }
 
     @Override
@@ -123,39 +108,38 @@ public class PhotoGalleryFragment extends VisibleFragment {
 
         // Setup RecyclerView
         mRecyclerView = v.findViewById(R.id.recycler_view_photos);
-//        setupAdapter(); TODO: uncomment
-//        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-//            @Override
-//            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-//                if (!mRecyclerView.canScrollVertically(1)) {
-//                    // Get the next page
-//                    updateItems(++mPage);
-//                }
-//            }
-//
-//            @Override
-//            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-//                if (newState == RecyclerView.SCROLL_STATE_SETTLING) {
-//                    GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
-//                    int start = max(manager.findFirstVisibleItemPosition() - 10, 0);
-//                    int end = min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
-//                    // Preload previous 10
-//                    for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
-//                        String url = mItems.get(i).getURL();
-//                        if (mDownloader.retrieveCache(url) == null)
-//                            mDownloader.queuePreload(url);
-//
-//                    }
-//                    // Preload next 10
-//                    for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
-//                        String url = mItems.get(i).getURL();
-//                        if (mDownloader.retrieveCache(url) == null)
-//                            mDownloader.queuePreload(url);
-//
-//                    }
-//                }
-//            }
-//        });
+        if (mPhotoPagedAdapter == null) {
+            mPhotoPagedAdapter = new PhotoPagedAdapter();
+        }
+        mRecyclerView.setAdapter(mPhotoPagedAdapter);
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (mItems == null) return;
+
+                // Preloading
+                if (newState == RecyclerView.SCROLL_STATE_SETTLING) {
+                    GridLayoutManager manager = (GridLayoutManager) mRecyclerView.getLayoutManager();
+                    int start = Math.max(manager.findFirstVisibleItemPosition() - 10, 0);
+                    int end = Math.min(manager.findLastVisibleItemPosition() + 10, mItems.size() - 1);
+
+                    // Preload previous 10
+                    for (int i = start; i < manager.findFirstVisibleItemPosition(); i++) {
+                        String url = mItems.get(i).getURL();
+                        if (mDownloader.retrieveCache(url) == null)
+                            mDownloader.queuePreload(url);
+                    }
+
+                    // Preload next 10
+                    for (int i = manager.findLastVisibleItemPosition() + 1; i <= end; i++) {
+                        String url = mItems.get(i).getURL();
+                        if (mDownloader.retrieveCache(url) == null)
+                            mDownloader.queuePreload(url);
+
+                    }
+                }
+            }
+        });
         mRecyclerView.getViewTreeObserver()
                 .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
@@ -175,15 +159,10 @@ public class PhotoGalleryFragment extends VisibleFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // TODO: live data
+
         mViewModel.getLiveDataGalleryItems().observe(getViewLifecycleOwner(), galleryItems -> {
-//            mItems = galleryItems;
-            if (mPhotoPagedAdapter == null) {
-                mPhotoPagedAdapter = new PhotoPagedAdapter();
-                mRecyclerView.setAdapter(mPhotoPagedAdapter);
-            }
+            mItems = galleryItems;
             mPhotoPagedAdapter.submitList(galleryItems);
-            Log.i(TAG, "Observed a live data with size " + galleryItems.size());
         });
     }
 
@@ -203,9 +182,8 @@ public class PhotoGalleryFragment extends VisibleFragment {
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                QueryPreferences.setStoredQuery(getActivity(), query);
-                resetItems();
-                updateItems(mPage);
+                mViewModel.setPhotoQuery(query);
+                mProgressBar.setVisibility(View.VISIBLE);
                 closeSearchView();
 
                 return true;
@@ -216,13 +194,10 @@ public class PhotoGalleryFragment extends VisibleFragment {
                 return false;
             }
         });
-        mSearchView.setOnSearchClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "SearchView clicked");
-                String lastQuery = QueryPreferences.getStoredQuery(getActivity());
-                mSearchView.setQuery(lastQuery, false);
-            }
+
+        mSearchView.setOnSearchClickListener(v -> {
+            String lastQuery = QueryPreferences.getStoredQuery(getActivity());
+            mSearchView.setQuery(lastQuery, false);
         });
 
         MenuItem pollItem = menu.findItem(R.id.menu_toggle_poll);
@@ -249,9 +224,10 @@ public class PhotoGalleryFragment extends VisibleFragment {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_clear:
-                QueryPreferences.setStoredQuery(getActivity(), null);
-                resetItems();
-                updateItems(mPage);
+                mViewModel.setPhotoQuery(null);
+                mProgressBar.setVisibility(View.VISIBLE);
+//                resetItems();
+//                updateItems(mPage);
                 closeSearchView();
                 return true;
             case R.id.menu_toggle_poll:
@@ -273,42 +249,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
     }
 
     /**
-     * Attaches <code>PhotoAdapter</code> to the <code>RecyclerView</code>.
-     */
-    private void setupAdapter() {
-        // AsyncTask callbacks may call when the fragment is not attached
-        if (isAdded()) {
-            if (mRecyclerView.getAdapter() == null) {
-                mPhotoAdapter = new PhotoAdapter();
-                mRecyclerView.setAdapter(mPhotoAdapter);
-                mPhotoAdapter.submitList(mItems);
-            }
-        }
-    }
-
-    /**
-     * Updates the list of items by downloading new items.
-     *
-     * @param page the page number to be downloaded.
-     */
-    private void updateItems(int page) {
-        String query = QueryPreferences.getStoredQuery(getActivity());
-        new FetchItemTask(query, page).execute();
-    }
-
-    /**
-     * Clears the list and sets the page to the first.
-     */
-    private void resetItems() {
-        mItems.clear();
-        mPhotoAdapter.submitList(mItems);
-        mPage = 1;
-
-        // Enable progress bar
-        mProgressBar.setVisibility(View.VISIBLE);
-    }
-
-    /**
      * Collapses the SearchView and hide keyboard input.
      */
     private void closeSearchView() {
@@ -321,185 +261,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
 
             // Close SearchView
             mSearchView.onActionViewCollapsed();
-        }
-    }
-
-    private class FetchItemTask extends AsyncTask<Void, Void, List<GalleryItem>> {
-
-        private int mPage;
-        private String mQuery;
-
-        /**
-         * Creates a <code>FetchItemTask</code> for a page number.
-         *
-         * @param page the page number.
-         */
-        public FetchItemTask(String query, int page) {
-            mQuery = query;
-            mPage = page;
-        }
-
-        /**
-         * Fetches photo data from Flickr.
-         *
-         * @param voids nothing.
-         * @return list of photo data.
-         */
-        @Override
-        protected List<GalleryItem> doInBackground(Void... voids) {
-            // Query
-            if (mQuery == null)
-                return new FlickrFetchr().fetchRecentPhotos(mPage);
-            else
-                return new FlickrFetchr().searchPhotos(mQuery, mPage);
-        }
-
-        /**
-         * Adds the photo data to the list and notify adapter of such change.
-         *
-         * @param galleryItems the new photo data to be added.
-         */
-        @Override
-        protected void onPostExecute(List<GalleryItem> galleryItems) {
-            mItems.addAll(galleryItems);
-            mPhotoAdapter.notifyDataSetChanged();
-
-            // Disable progress bar
-            mProgressBar.setVisibility(GONE);
-        }
-    }
-
-    /**
-     * Custom <code>RecyclerView</code> adapter for displaying images.
-     */
-    private class PhotoAdapter extends ListAdapter<GalleryItem, PhotoAdapter.ViewHolder> {
-
-        public PhotoAdapter() {
-            super(new DiffUtil.ItemCallback<GalleryItem>() {
-                @Override
-                public boolean areItemsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
-                    return oldItem.getId().equals(newItem.getId());
-                }
-
-                @Override
-                public boolean areContentsTheSame(@NonNull GalleryItem oldItem, @NonNull GalleryItem newItem) {
-                    return oldItem.equals(newItem);
-                }
-            });
-        }
-
-        /**
-         * Creates a <code>ViewHolder</code>.
-         *
-         * @param parent   the parent layout.
-         * @param viewType the view type (not used).
-         * @return a <code>ViewHolder</code>.
-         */
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_photo, parent, false);
-            return new ViewHolder(v);
-        }
-
-        /**
-         * Binds the <code>ViewHolder</code> with the data.
-         *
-         * @param holder   the <code>ViewHolder</code>.
-         * @param position the position.
-         */
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            List<GalleryItem> galleryItems = getCurrentList();
-            // Display placeholder image
-            Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
-            holder.bindDrawable(drawable);
-
-            holder.bindGalleryItem(galleryItems.get(position));
-
-            String url = galleryItems.get(position).getURL();
-            Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
-
-            if (cacheBitmap != null) {
-                holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
-            } else {
-                mDownloader.queueThumbnail(holder, url);
-            }
-        }
-
-        /**
-         * Custom <code>ViewHolder</code>.
-         */
-        private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, View.OnLongClickListener {
-
-            private ImageView mImageView;
-            private TextView mTextView;
-            private GalleryItem mGalleryItem;
-
-            /**
-             * Creates a <code>VewHolder</code>.
-             *
-             * @param itemView the layout.
-             */
-            public ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                mImageView = itemView.findViewById(R.id.image_view_photo);
-                mTextView = itemView.findViewById(R.id.text_caption);
-                itemView.setOnClickListener(this);
-                itemView.setOnLongClickListener(this);
-            }
-
-            /**
-             * Sets the image.
-             *
-             * @param drawable the image.
-             */
-            public void bindDrawable(Drawable drawable) {
-                mImageView.setImageDrawable(drawable);
-            }
-
-            /**
-             * Sets the item data.
-             *
-             * @param galleryItem the item data.
-             */
-            public void bindGalleryItem(GalleryItem galleryItem) {
-                mGalleryItem = galleryItem;
-                mImageView.setContentDescription(mGalleryItem.getCaption());
-            }
-
-            /**
-             * Starts <code>PhotoPageActivity</code> when the image is clicked.
-             *
-             * @param v the clicked item.
-             */
-            @Override
-            public void onClick(View v) {
-                Intent webIntent = PhotoPageActivity.newIntent(getActivity(), mGalleryItem.getPhotoPageUri());
-                startActivity(webIntent);
-            }
-
-            /**
-             * Displays caption when the image is held.
-             *
-             * @param v the held item.
-             * @return true (handled).
-             */
-            @Override
-            public boolean onLongClick(View v) {
-                // Display caption and darken
-                mTextView.setVisibility(View.VISIBLE);
-                mTextView.setText(mGalleryItem.getCaption());
-                // Disappear after 3 seconds
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mTextView.setVisibility(GONE);
-                    }
-                }, 2000);
-                return true;
-            }
         }
     }
 
@@ -541,6 +302,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
          */
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            mProgressBar.setVisibility(GONE);
             GalleryItem item = getItem(position);
             // Display placeholder image
             Drawable drawable = getResources().getDrawable(R.drawable.ic_placeholder);
@@ -548,14 +310,14 @@ public class PhotoGalleryFragment extends VisibleFragment {
 
             holder.bindGalleryItem(item);
 
-//            String url = galleryItems.get(position).getURL();
-//            Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
-//
-//            if (cacheBitmap != null) {
-//                holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
-//            } else {
-//                mDownloader.queueThumbnail(holder, url);
-//            }
+            String url = item.getURL();
+            Bitmap cacheBitmap = mDownloader.retrieveCache(holder, url);
+
+            if (cacheBitmap != null) {
+                holder.bindDrawable(new BitmapDrawable(getResources(), cacheBitmap));
+            } else {
+                mDownloader.queueThumbnail(holder, url);
+            }
         }
 
         /**

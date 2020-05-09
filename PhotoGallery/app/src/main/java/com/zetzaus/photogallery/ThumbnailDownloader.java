@@ -1,17 +1,19 @@
 package com.zetzaus.photogallery;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 import android.util.LruCache;
 
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
 
 /**
  * This class handles downloading the actual image file from FLickr.
@@ -28,12 +30,14 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     private boolean mHasQuit = false;
     private Handler mRequestHandler;
     private Handler mResponseHandler;
+    private FlickrRepository mRepository = new FlickrRepository();
     private ConcurrentHashMap<T, String> mRequestMap = new ConcurrentHashMap<>();   //thread-safe version of HashMap, used to save the URL
     private ThumbnailDownloadListener<T> mDownloadListener;
     private PhotoLruCache mLruCache;
 
     /**
      * Callback interface that notifies target when download is complete.
+     *
      * @param <T> the target.
      */
     public interface ThumbnailDownloadListener<T> {
@@ -42,11 +46,36 @@ public class ThumbnailDownloader<T> extends HandlerThread {
 
     /**
      * Sets the callback listener.
+     *
      * @param downloadListener the callback listener.
      */
     public void setDownloadListener(ThumbnailDownloadListener<T> downloadListener) {
         mDownloadListener = downloadListener;
     }
+
+    public LifecycleObserver fragmentObserver = new LifecycleObserver() {
+        @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        public void onStart() {
+            start();
+            getLooper();
+            Log.i(TAG, "Thumbnail downloader started");
+        }
+
+        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        public void onStop() {
+            quit();
+            Log.i(TAG, "Thumbnail downloader stopped");
+        }
+    };
+
+    public LifecycleObserver viewObserver = new LifecycleObserver() {
+        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        public void onDestroyView() {
+            Log.i(TAG, "Thumbnail downloader will be restarted");
+            clearQueue();
+        }
+    };
+
 
     /**
      * Creates a <code>ThumbnailDownloader</code>.
@@ -61,6 +90,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
     /**
      * Initializes the <code>Handler</code> which is responsible for handling messages and initialize the cache.
      */
+    @SuppressLint("HandlerLeak") // The handler is attached to this thread not the main
     @Override
     protected void onLooperPrepared() {
         mRequestHandler = new Handler() {
@@ -69,7 +99,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
                 if (msg.what == MESSAGE_DOWNLOAD) {
                     T target = (T) msg.obj;
                     String url = mRequestMap.get(target);
-                    Log.i(TAG, "Handle message with URL: " + url);
+                    Log.d(TAG, "Handle message with URL: " + url);
                     handleRequest(target);
                 } else if (msg.what == MESSAGE_PRELOAD) {
                     preload((String) msg.obj);
@@ -90,7 +120,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
      * @param url    the image url to download.
      */
     public void queueThumbnail(T target, String url) {
-        Log.i(TAG, "Download from URL: " + url);
+        Log.d(TAG, "Download from URL: " + url);
 
         if (url == null) {
             // If the url is not available (Flickr may not contain the URL)
@@ -170,23 +200,20 @@ public class ThumbnailDownloader<T> extends HandlerThread {
         if (image == null) {
             // Download and create bitmap
             image = downloadImage(url);
-            Log.i(TAG, "Bitmap image created");
+            Log.d(TAG, "Bitmap image created");
         } else {
-            Log.i(TAG, "Bitmap taken from cache");
+            Log.d(TAG, "Bitmap taken from cache");
         }
 
         // Communicate back to UI thread
         final Bitmap finalImage = image;
-        mResponseHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                // Handle user quit and RecyclerView recycling the ViewHolder
-                if (mRequestMap.get(target) == null || mHasQuit || !mRequestMap.get(target).equals(url))
-                    return;
+        mResponseHandler.post(() -> {
+            // Handle user quit and RecyclerView recycling the ViewHolder
+            if (mRequestMap.get(target) == null || mHasQuit || !mRequestMap.get(target).equals(url))
+                return;
 
-                mRequestMap.remove(target);
-                mDownloadListener.onThumbnailDownloaded(target, finalImage);
-            }
+            mRequestMap.remove(target);
+            mDownloadListener.onThumbnailDownloaded(target, finalImage);
         });
 
     }
@@ -198,18 +225,10 @@ public class ThumbnailDownloader<T> extends HandlerThread {
      * @return the image downloaded from the url.
      */
     private Bitmap downloadImage(String url) {
+        Bitmap image = mRepository.fetchImage(url);
+        mLruCache.put(url, image);
 
-        try {
-            byte[] imageBytes = new FlickrFetchr().getUrlBytes(url);
-            Bitmap image = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-            mLruCache.put(url, image);
-
-            return image;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
+        return image;
     }
 
     /**
@@ -226,6 +245,7 @@ public class ThumbnailDownloader<T> extends HandlerThread {
      *
      * @return
      */
+
     @Override
     public boolean quit() {
         mHasQuit = true;
