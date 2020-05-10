@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 /**
  * This class is a background service that checks for new images in Flickr. The class uses the AlarmManager, to be used
  * below Android L.
+ * @deprecated Use {@link PollWorker}
  */
 public class PollService extends IntentService {
 

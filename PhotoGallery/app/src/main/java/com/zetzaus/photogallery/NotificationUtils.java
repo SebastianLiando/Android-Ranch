@@ -2,22 +2,19 @@ package com.zetzaus.photogallery;
 
 import android.app.Activity;
 import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
+
+import static com.zetzaus.photogallery.PhotoGalleryApplication.NOTIFICATION_CHANNEL_ID;
 
 /**
  * This class is used to send a notification about a new picture available.
  */
 public class NotificationUtils {
 
-    private static final String NOTIFICATION_CHANNEL_ID = "Picture Channel";
     public static final String EXTRA_NOTIFICATION = "NOTIFICATION";
     public static final String EXTRA_REQUEST_CODE = "REQ_CODE";
 
@@ -27,8 +24,6 @@ public class NotificationUtils {
      * @param context the context.
      */
     public static void notifyNewPicture(Context context) {
-        createNotificationChannel(context);
-
         Intent notifIntent = PhotoGalleryActivity.newIntent(context);
         PendingIntent notifPendingIntent = PendingIntent.getActivity(context, 1, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -58,20 +53,5 @@ public class NotificationUtils {
         intent.putExtra(EXTRA_NOTIFICATION, notification);
         context.sendOrderedBroadcast(intent, PollService.NOTIFICATION_PERMISSION,
                 null, null, Activity.RESULT_OK, null, null);
-    }
-
-    /**
-     * Creates a notification channel for android O and above.
-     *
-     * @param context the context.
-     */
-    private static void createNotificationChannel(Context context) {
-        NotificationManagerCompat manager = NotificationManagerCompat.from(context);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "Pictures Notification", NotificationManager.IMPORTANCE_HIGH);
-            channel.setDescription(context.getString(R.string.channel_desc));
-            channel.enableLights(true);
-            manager.createNotificationChannel(channel);
-        }
     }
 }

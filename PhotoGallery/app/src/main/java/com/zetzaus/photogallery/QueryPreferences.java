@@ -77,7 +77,7 @@ public class QueryPreferences {
      */
     public static void setAlarmOn(Context context, boolean isAlarmOn) {
         PreferenceManager.getDefaultSharedPreferences(context).edit()
-                .putString(PREF_ALARM, Boolean.toString(isAlarmOn))
+                .putBoolean(PREF_ALARM, isAlarmOn)
                 .apply();
     }
 }

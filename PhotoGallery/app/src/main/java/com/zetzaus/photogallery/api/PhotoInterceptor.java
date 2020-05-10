@@ -1,7 +1,5 @@
 package com.zetzaus.photogallery.api;
 
-import android.net.Uri;
-
 import java.io.IOException;
 
 import okhttp3.HttpUrl;

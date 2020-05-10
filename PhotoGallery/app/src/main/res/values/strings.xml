@@ -9,7 +9,10 @@
     <string name="notif_title_new">New Pictures Available</string>
     <string name="notif_content_new">You have new pictures to be seen in Photo Gallery</string>
 
+    <string name="channel_title">Pictures Notification</string>
     <string name="channel_desc">Notification channel about pictures</string>
 
     <string name="toast_no_activity">Sorry! Unable to open the link.</string>
+
+
 </resources>

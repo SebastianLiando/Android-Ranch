@@ -226,7 +226,10 @@ public class ThumbnailDownloader<T> extends HandlerThread {
      */
     private Bitmap downloadImage(String url) {
         Bitmap image = mRepository.fetchImage(url);
-        mLruCache.put(url, image);
+        
+        if (image != null) {
+            mLruCache.put(url, image);
+        }
 
         return image;
     }

@@ -6,7 +6,6 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
@@ -18,6 +17,7 @@ import androidx.annotation.RequiresApi;
 
 /**
  * This class is the <code>JobService</code> version for checking new images.
+ * @deprecated use {@link PollWorker}
  */
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class PollJobScheduler extends JobService {

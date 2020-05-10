@@ -63,12 +63,20 @@ public class FlickrRepository {
         return retrofit.create(FlickrApi.class);
     }
 
+    public Call<PhotoResponse> fetchPhotoRequest() {
+        return mFlickrApi.fetchPhotos(1);
+    }
+
+    public Call<PhotoResponse> searchPhotoRequest(String text) {
+        return mFlickrApi.searchPhotos(text, 1);
+    }
+
     public LiveData<List<GalleryItem>> fetchPhotos() {
-        return fetchResponseFor(mFlickrApi.fetchPhotos(1));
+        return fetchResponseFor(fetchPhotoRequest());
     }
 
     public LiveData<List<GalleryItem>> searchPhotos(String text) {
-        return fetchResponseFor(mFlickrApi.searchPhotos(text, 1));
+        return fetchResponseFor(searchPhotoRequest(text));
     }
 
     private LiveData<List<GalleryItem>> fetchResponseFor(Call<PhotoResponse> operation) {

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -21,6 +20,8 @@ import android.widget.ProgressBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import java.util.concurrent.TimeUnit;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
@@ -29,6 +30,11 @@ import androidx.paging.PagedListAdapter;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import static android.view.View.GONE;
 
@@ -38,7 +44,9 @@ import static android.view.View.GONE;
 public class PhotoGalleryFragment extends VisibleFragment {
 
     private static final String TAG = PhotoGalleryFragment.class.getSimpleName();
+
     private static final float ITEM_COLUMN_WIDTH = 400f;
+    private static final String JOB_POLL = "Poll Job";
 
     private RecyclerView mRecyclerView;
     private ProgressBar mProgressBar;
@@ -49,7 +57,6 @@ public class PhotoGalleryFragment extends VisibleFragment {
     private PhotoGalleryViewModel mViewModel;
 
     private PagedList<GalleryItem> mItems;
-    private int mPage = 1;
 
     /**
      * Returns an instance of this fragment.
@@ -201,13 +208,7 @@ public class PhotoGalleryFragment extends VisibleFragment {
         });
 
         MenuItem pollItem = menu.findItem(R.id.menu_toggle_poll);
-        boolean scheduled = false;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            scheduled = PollJobScheduler.isScheduled(getActivity());
-        else
-            scheduled = PollService.isAlarmOn(getActivity());
-
-        if (scheduled) {
+        if (QueryPreferences.isAlarmOn(getActivity())) {
             pollItem.setTitle(getString(R.string.menu_stop_poll));
         } else {
             pollItem.setTitle(getString(R.string.menu_start_poll));
@@ -226,18 +227,28 @@ public class PhotoGalleryFragment extends VisibleFragment {
             case R.id.menu_clear:
                 mViewModel.setPhotoQuery(null);
                 mProgressBar.setVisibility(View.VISIBLE);
-//                resetItems();
-//                updateItems(mPage);
                 closeSearchView();
                 return true;
             case R.id.menu_toggle_poll:
-                boolean active;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    active = !PollJobScheduler.isScheduled(getActivity());
-                    PollJobScheduler.scheduleJob(getActivity(), active);
+                boolean active = QueryPreferences.isAlarmOn(getActivity());
+                if (!active) {
+                    // Start WorkManager
+                    Constraints jobConstraints = new Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.UNMETERED)
+                            .build();
+                    PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(PollWorker.class,
+                            15,
+                            TimeUnit.MINUTES)
+                            .setConstraints(jobConstraints)
+                            .build();
+                    WorkManager.getInstance(getActivity())
+                            .enqueueUniquePeriodicWork(JOB_POLL, ExistingPeriodicWorkPolicy.KEEP, workRequest);
+                    QueryPreferences.setAlarmOn(getActivity(), true);
                 } else {
-                    active = !PollService.isAlarmOn(getActivity());
-                    PollService.setServiceAlarm(getActivity(), active);
+                    //Stop WorkManager
+                    WorkManager.getInstance(getActivity())
+                            .cancelUniqueWork(JOB_POLL);
+                    QueryPreferences.setAlarmOn(getActivity(), false);
                 }
 
                 // Change the toolbar text
