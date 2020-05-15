@@ -30,14 +30,6 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class FlickrRepository {
 
     private static final String TAG = FlickrRepository.class.getSimpleName();
-    private static final String API_KEY = "d12d3dc7c5c2831784ed459a5a020495";
-    private static final Uri ENDPOINT = Uri.parse("services/rest/").buildUpon()
-            .appendQueryParameter("api_key", API_KEY)
-            .appendQueryParameter("method", "flickr.interestingness.getList") //TODO: abstract
-            .appendQueryParameter("format", "json")
-            .appendQueryParameter("nojsoncallback", "1")
-            .appendQueryParameter("extras", "url_s")
-            .build();
 
     private FlickrApi mFlickrApi;
 
